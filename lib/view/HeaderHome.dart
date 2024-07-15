@@ -35,7 +35,7 @@ class _HeaderHomeState extends State<HeaderHome> {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 200,
+      height: 180,
       color: Color(0xFFFF8C00),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
