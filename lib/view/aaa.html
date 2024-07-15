@@ -1,0 +1,165 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+
+class ProductDetailsPage extends StatefulWidget {
+  const ProductDetailsPage({Key? key}) : super(key: key);
+
+  @override
+  _ProductDetailsPageState createState() => _ProductDetailsPageState();
+}
+
+class _ProductDetailsPageState extends State<ProductDetailsPage> {
+  List<Map<String, dynamic>> colors = [
+    {'color': Colors.black, 'name': 'Black'},
+    {'color': Colors.blue, 'name': 'Blue'},
+    {'color': Colors.green, 'name': 'Green'},
+    {'color': Colors.red, 'name': 'Red'},
+  ];
+
+  int _selectedColorIndex = -1; // No color selected by default
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('', style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFFFF8C00),
+        iconTheme: const IconThemeData(
+          color: Colors.white, // ตั้งค่าสีของไอคอนย้อนกลับ
+        ),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(left: 20, right: 20, top: 10, bottom: 0),
+              child: Text(
+                'Samsung Galaxy A15 (8+128GB) Black',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 5, horizontal: 20),
+              child: Row(
+                children: [
+                  Text("Brand: SAMSUNG",
+                      style: TextStyle(fontSize: 16, color: Colors.grey)),
+                  Text(" | ",
+                      style: TextStyle(fontSize: 16, color: Colors.grey)),
+                  Text('SKU: 880695349169',
+                      style: TextStyle(fontSize: 16, color: Colors.grey)),
+                ],
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Text(
+                "฿ 24,095",
+                style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 26,
+                    // fontWeight: FontWeight.bold,
+                    fontFamily: 'Kanit'),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              child: Wrap(
+                spacing: 8,
+                children: List<Widget>.generate(colors.length, (index) {
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedColorIndex = index;
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(5),
+                      child: Container(
+                        width: 100,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          
+                          // color: colors[index]['color'],
+                          border: Border.all(
+                            color: _selectedColorIndex == index
+                                ? Color(0xFFFFBB5C)
+                                : Color.fromARGB(255, 233, 233, 233),
+                            width: 2,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          colors[index]['name'],
+                          style: TextStyle(
+                            // color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(Icons.security, color: Colors.grey), // Warranty icon
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'รับประกัน 1 ปี',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+              child: const Text(
+                '• RAM 8 GB, Super AMOLED หน้าจอใหญ่, ความละเอียด 50 MP\n'
+                '• แบตเตอรี่ขนาดใหญ่ 5000mAh\n'
+                '• แบตเตอรี่รองรับการชาร์จเร็ว Super Fast Charging ได้ทันใจ ไม่ต้องรอนาน\n'
+                '• มีระบบ Fast charge 25W\n'
+                '• กล้องหน้า 13MP\n'
+                '• กล้องหลัง 50MP (Main) + 5MP (Ultrawide) + 2MP (Macro)',
+                style: TextStyle(fontSize: 18, fontFamily: 'Kanit'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+
+// Container(
+  //   padding: EdgeInsets.all(10.0),
+  //   width: MediaQuery.of(context).size.width,
+  //   height: 100,
+  //   margin: EdgeInsets.only(left: 15, right: 15, top: 15),
+  //   decoration: myBoxDecorationBorder,
+  //   child: Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Text(
+  //         'สาขา : ${brance_name}',
+  //         style: TextStyle(
+  //             fontSize: 20,
+  //             fontWeight: FontWeight.bold,
+  //             color: Colors.black),
+  //       ),
+  //       Text(
+  //         'รหัสสาขา  : ${brance_code}',
+  //         style: TextStyle(fontSize: 16, color: Colors.black),
+  //       ),
+  //     ],
+  //   ),
+  // ),
