@@ -77,103 +77,190 @@ class _ProfileMenuState extends State<ProfileMenu> {
     );
   }
 
+  Widget _buildSectionTitle(String title) {
+    return Container(
+      width: MediaQuery.of(context).size.width,
+      decoration: BoxDecoration(color: Color(0xfff8f8f8)),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        child: Text(
+          title,
+          style: TextStyle(
+            fontSize: 16, // ใช้ตัวอักษรแบบบาง
+            color: Colors.grey,
+            fontFamily: 'Kanit',
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListTile(String title, IconData icon, {required VoidCallback onTap}) {
+    return Column(
+      children: [
+        ListTile(
+          leading: Icon(icon, color: Color(0xffFF8C00)),
+          title: Text(
+            title,
+            style: TextStyle(fontFamily: 'Kanit', fontSize: 16, fontWeight: FontWeight.w300),
+          ),
+          trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+          onTap: onTap,
+        ),
+        Divider(
+          thickness: 1,
+          indent: 16,
+          endIndent: MediaQuery.of(context).size.width * 0.05,
+          color: Colors.grey.shade300,
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context); // Initialize Toast context
 
     return Scaffold(
-      body: ListView(
-        children: [
-          // const Padding(
-          //   padding: EdgeInsets.all(8.0),
-          //   child: Center(
-          //     child: CircleAvatar(
-          //       radius: 50,
-          //       backgroundColor: Colors.orange,
-          //       child: Icon(Icons.person, size: 70, color: Colors.white),
-          //     ),
-          //   ),
-          // ),
-          SizedBox(height:30),
-          ListTile(
-            leading: Icon(Icons.person, color: Color(0xffFF8C00)),
-            title: Text('ข้อมูลเกี่ยวกับบัญชี'),
-            trailing: Icon(Icons.arrow_forward_ios),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        const ProfilePage()), // ไปหน้า ProfilePage
-              );
-            },
+      appBar: AppBar(
+        title: const Text(
+          'ตั้งค่าบัญชี',
+          style: TextStyle(
+            fontFamily: 'Kanit',
+            color: Colors.black,
+            fontWeight: FontWeight.w300, // ใช้ตัวอักษรแบบบาง
           ),
-          Divider(),
-          ListTile(
-            leading: Icon(Icons.attach_money, color: Color(0xffFF8C00)),
-            title: Text('ยอดขาย'),
-            trailing: Icon(Icons.arrow_forward_ios),
-            onTap: () {
-              // การทำงานเมื่อกดเมนู ยอดขาย
-            },
-          ),
-          Divider(),
-          ListTile(
-            leading: Icon(Icons.trending_up, color: Color(0xffFF8C00)),
-            title: Text('Forecast'),
-            trailing: Icon(Icons.arrow_forward_ios),
-            onTap: () {
-              // การทำงานเมื่อกดเมนู Forecast
-            },
-          ),
-          Divider(),
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: GestureDetector(
-              onTap: () {
-                logout(); // logout function
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.exit_to_app, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text(
-                      "ออกจากระบบ",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontFamily: 'Kanit',
-                        fontSize: 16,
+        ),
+        backgroundColor: Colors.white,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.orange),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: Container(
+        color: Colors.white,
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionTitle('บัญชีของฉัน'),
+                  _buildListTile(
+                    'ข้อมูลเกี่ยวกับบัญชี',
+                    Icons.person,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ProfilePage()), // ไปหน้า ProfilePage
+                      );
+                    },
+                  ),
+                  _buildSectionTitle('ตั้งค่า'),
+                ],
+              ),
+            ),
+            SliverList(
+              delegate: SliverChildListDelegate(
+                [
+                  _buildListTile(
+                    'ตั้งค่าการแชท',
+                    Icons.chat,
+                    onTap: () {},
+                  ),
+                  _buildListTile(
+                    'ตั้งค่าการแจ้งเตือน',
+                    Icons.notifications,
+                    onTap: () {},
+                  ),
+                  _buildListTile(
+                    'การตั้งค่าความเป็นส่วนตัว',
+                    Icons.lock,
+                    onTap: () {},
+                  ),
+                  _buildListTile(
+                    'ผู้ใช้ที่ถูกระงับ',
+                    Icons.block,
+                    onTap: () {},
+                  ),
+                  _buildListTile(
+                    'ภาษา / Language',
+                    Icons.language,
+                    onTap: () {},
+                  ),
+                ],
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionTitle('ช่วยเหลือ'),
+                  _buildListTile(
+                    'ศูนย์ช่วยเหลือ',
+                    Icons.help,
+                    onTap: () {},
+                  ),
+                  _buildListTile(
+                    'กฎระเบียบในการใช้',
+                    Icons.rule,
+                    onTap: () {},
+                  ),
+                  _buildListTile(
+                    'นโยบายของ Shopee',
+                    Icons.policy,
+                    onTap: () {},
+                  ),
+                  _buildListTile(
+                    'ชอบใช้งาน Shopee? ให้คะแนนแอปเลย!',
+                    Icons.star,
+                    onTap: () {},
+                  ),
+                  _buildListTile(
+                    'เกี่ยวกับ',
+                    Icons.info,
+                    onTap: () {},
+                  ),
+                  _buildListTile(
+                    'คำขอลบบัญชีผู้ใช้',
+                    Icons.delete,
+                    onTap: () {},
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20.0),
+                    child: GestureDetector(
+                      onTap: () {
+                        logout(); // logout function
+                      },
+                      child: Container(
+                        margin: EdgeInsets.symmetric(horizontal: 20),
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.red),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Text(
+                              "ออกจากระบบ",
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontFamily: 'Kanit',
+                                fontWeight: FontWeight.w300, // ใช้ตัวอักษรแบบบาง
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    SizedBox(width: 8),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Center(
-              child: Text(
-                'Version 1.0.0',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

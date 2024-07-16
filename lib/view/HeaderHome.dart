@@ -34,29 +34,55 @@ class _HeaderHomeState extends State<HeaderHome> {
   @override
   Widget build(BuildContext context) {
     return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFFFA726), Color(0xFFFF8C00)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
       width: double.infinity,
       height: 180,
-      color: Color(0xFFFF8C00),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 80),
-            Text(
-              'Hi! ${fullname}',
-              style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
+      // color: Color(0xFFFF8C00),
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: 80),
+                Text(
+                  'Hi! ${fullname}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontFamily: 'Kanit'),
+                ),
+                SizedBox(height: 3),
+                Text(
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  '${brance_name} ' + '(' + brance_code + ')',
+                  style: TextStyle(
+                      fontSize: 16, color: Colors.white, fontFamily: 'Kanit'),
+                ),
+              ],
             ),
-            SizedBox(height: 3),
-            Text(
-              '${brance_name} ' + '(' + brance_code + ')',
-              style: TextStyle(fontSize: 16, color: Colors.white),
+          ),
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: Image.asset(
+              'assets/images/tgreloading-transformed.png',
+              width: 100, // Adjust the width as needed
+              height: 100, // Adjust the height as needed
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

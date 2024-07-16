@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:myapp/model/user.dart'; // Assuming this is where your User class is
 import 'package:myapp/view/ChooseLogin.dart';
 import 'package:myapp/view/HomeView.dart';
+import 'package:myapp/view/SplashScreen.dart';
 
 void main() => runApp(const MyApp());
 
@@ -34,8 +35,9 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: initialRoute,
+    return const MaterialApp(
+      // home: initialRoute,
+      home: SplashScreen(),
     );
   }
 }

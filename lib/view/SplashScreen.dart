@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:myapp/view/IndexScreen.dart'; // ปรับให้ตรงกับ path ของไฟล์ IndexScreen
+import 'package:myapp/view/ChooseLogin.dart';
+import 'package:myapp/view/HomeView.dart';
+import 'package:myapp/model/user.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -12,6 +14,7 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
+  late Widget initialRoute = const HomeView();
 
   @override
   void initState() {
@@ -28,15 +31,28 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => IndexScreen(),
-          ),
-        );
-      }
+    checkLoginStatus().then((_) {
+      _controller.addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => initialRoute,
+            ),
+          );
+        }
+      });
     });
+  }
+
+  Future<void> checkLoginStatus() async {
+    var user = User();
+    await user.init();
+    if (user.isLogin) {
+      initialRoute = const HomeView();
+    } else {
+      initialRoute = const ChooseLogin();
+    }
+    setState(() {});
   }
 
   @override
@@ -48,27 +64,46 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: FadeTransition(
-          opacity: _animation,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                'assets/logo.png', // เพิ่ม path ของโลโก้ของคุณ
-                width: 100,
-                height: 100,
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'MyApp',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.orange,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFFFA726), Color(0xFFFF7043)], // Gradient colors
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
+          child: FadeTransition(
+            opacity: _animation,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/images/tgreloading.png', // เพิ่ม path ของโลโก้ของคุณ
+                  width: 100,
+                  height: 100,
                 ),
-              ),
-            ],
+                const SizedBox(height: 10),
+                const Text(
+                  'TG Fone',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white, // Change text color to white for better contrast
+                    fontFamily: 'Kanit',
+                  ),
+                ),
+                const SizedBox(height: 5),
+                const Text(
+                  '1APPservices',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.white, // Change text color to white for better contrast
+                    fontFamily: 'Kanit',
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
