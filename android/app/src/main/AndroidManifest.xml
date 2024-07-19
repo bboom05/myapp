@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="One App Service"
+        android:label="1APPServices"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity

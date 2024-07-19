@@ -657,19 +657,23 @@ class _IndexScreenState extends State<IndexScreen>
                               ),
                               const SizedBox(width: 8),
                               Container(
+                                width: 23,
                                 padding: EdgeInsets.all(5),
                                 decoration: BoxDecoration(
+                                
                                   shape: BoxShape.circle,
                                   color: Colors.white,
                                 ),
-                                child: Text(
-                                  tag.quantity.toString(),
-                                  style: TextStyle(
-                                    color: tag.isSelected
-                                        ? Colors.grey.shade400
-                                        : Colors.black,
-                                    fontSize: 12,
-                                    fontFamily: 'Kanit',
+                                child: Center(
+                                  child: Text(
+                                    tag.quantity.toString(),
+                                    style: TextStyle(
+                                      color: tag.isSelected
+                                          ? Colors.grey.shade400
+                                          : Colors.black,
+                                      fontSize: 12,
+                                      fontFamily: 'Kanit',
+                                    ),
                                   ),
                                 ),
                               ),

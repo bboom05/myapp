@@ -73,15 +73,15 @@ class _HeaderHomeState extends State<HeaderHome> {
               ],
             ),
           ),
-          Positioned(
-            bottom: 0,
-            right: 0,
-            child: Image.asset(
-              'assets/images/tgreloading-transformed.png',
-              width: 100, // Adjust the width as needed
-              height: 100, // Adjust the height as needed
-            ),
-          ),
+          // Positioned(
+          //   bottom: 0,
+          //   right: 0,
+          //   child: Image.asset(
+          //     'assets/images/tg_logo.png',
+          //     width: 100, // Adjust the width as needed
+          //     height: 100, // Adjust the height as needed
+          //   ),
+          // ),
         ],
       ),
     );

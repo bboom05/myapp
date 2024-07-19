@@ -102,7 +102,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
           leading: Icon(icon, color: Color(0xffFF8C00)),
           title: Text(
             title,
-            style: TextStyle(fontFamily: 'Kanit', fontSize: 16, fontWeight: FontWeight.w300),
+            style: TextStyle(fontFamily: 'Kanit', fontSize: 16),
           ),
           trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
           onTap: onTap,
@@ -124,7 +124,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'ตั้งค่าบัญชี',
+          'บัญชี',
           style: TextStyle(
             fontFamily: 'Kanit',
             color: Colors.black,

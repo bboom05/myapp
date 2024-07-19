@@ -20,7 +20,7 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(seconds: 3),
+      duration: const Duration(seconds: 5),
       vsync: this,
     );
 
@@ -67,7 +67,10 @@ class _SplashScreenState extends State<SplashScreen>
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFFFA726), Color(0xFFFF7043)], // Gradient colors
+            colors: [
+              Colors.white,
+              Colors.grey[200]!, // เพิ่มสีเทาอ่อนเพื่อสร้างความลึก
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -79,26 +82,17 @@ class _SplashScreenState extends State<SplashScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.asset(
-                  'assets/images/tgreloading.png', // เพิ่ม path ของโลโก้ของคุณ
-                  width: 100,
-                  height: 100,
+                  'assets/images/logo_splash.png', // เพิ่ม path ของโลโก้ของคุณ
+                  width: 200,
+                  // height: 200,
                 ),
-                const SizedBox(height: 10),
-                const Text(
-                  'TG Fone',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white, // Change text color to white for better contrast
-                    fontFamily: 'Kanit',
-                  ),
-                ),
-                const SizedBox(height: 5),
+              
+                 const SizedBox(height: 5),
                 const Text(
                   '1APPservices',
                   style: TextStyle(
                     fontSize: 18,
-                    color: Colors.white, // Change text color to white for better contrast
+                    color: Color(0xFFFF8C00), // สีข้อความเป็นสีดำ
                     fontFamily: 'Kanit',
                   ),
                 ),
