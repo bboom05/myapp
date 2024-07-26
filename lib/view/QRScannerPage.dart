@@ -1,14 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
-import 'package:myapp/system/info.dart';
-import 'package:myapp/view/ProductDetailPage.dart';
-import 'package:myapp/view/HomeView.dart'; // import HomeView
-import 'package:qr_code_scanner/qr_code_scanner.dart' as qr;
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:image_picker/image_picker.dart';
-import 'package:qr_code_tools/qr_code_tools.dart';
+import '../model/user.dart';
+import '../system/info.dart';
+import 'ProductDetailPage.dart';
 
 class QRScannerPage extends StatefulWidget {
   const QRScannerPage({super.key});
@@ -19,32 +16,128 @@ class QRScannerPage extends StatefulWidget {
 
 class _QRViewCreatedPageState extends State<QRScannerPage> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  qr.QRViewController? controller;
+  MobileScannerController controller = MobileScannerController();
   String qrText = '';
   bool isProcessing = false;
-  final ImagePicker _picker = ImagePicker();
+  bool showLoading = false;
+
+  var user = User();
+  bool isLogin = false;
+  var fullname = "";
+  var brance_code = "";
+  var brance_name = "";
+
+  @override
+  void initState() {
+    super.initState();
+    getUsers();
+    controller.barcodes.listen((capture) async {
+      final List<Barcode> barcodes = capture.barcodes;
+      for (final barcode in barcodes) {
+        if (!isProcessing) {
+          setState(() {
+            qrText = barcode.rawValue!;
+            isProcessing = true;
+            showLoading = true;
+          });
+          controller.stop();
+
+          print('Scanned QR Code init: $qrText');
+
+          if (Uri.tryParse(qrText)?.hasAbsolutePath ?? false) {
+            Uri uri = Uri.parse(qrText);
+            String qrId = uri.queryParameters['qr_id'] ?? '';
+
+            if (qrId.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้'),
+                ),
+              );
+              setState(() {
+                isProcessing = false;
+                showLoading = false;
+              });
+              controller.start();
+            } else {
+              var productDetails = await getQr(qrText);
+
+              print('Product Details init: $productDetails');
+
+              if (productDetails != null) {
+                var productData = productDetails['data']?.first ?? {};
+                var promotionData = productDetails['promotion'] ?? {};
+                print("ProductData $productData");
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProductDetailPage(
+                        data: Map<String, dynamic>.from(productData), 
+                        promotion: Map<String, dynamic>.from(promotionData)),
+                  ),
+                ).then((_) {
+                  setState(() {
+                    isProcessing = false;
+                    showLoading = false;
+                  });
+                });
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้'),
+                  ),
+                );
+                setState(() {
+                  isProcessing = false;
+                  showLoading = false;
+                });
+                controller.start();
+              }
+            }
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('QR Code ไม่ถูกต้อง'),
+              ),
+            );
+            setState(() {
+              isProcessing = false;
+              showLoading = false;
+            });
+            controller.start();
+          }
+        }
+      }
+    });
+  }
+
+  Future<void> getUsers() async {
+    await user.init();
+    setState(() {
+      isLogin = user.isLogin;
+      fullname = user.fullname;
+      brance_code = user.brance_code;
+      brance_name = user.brance_name;
+    });
+  }
 
   Future<Map<String, dynamic>?> fetchProductDetail(
       http.Client client, String jsonMap) async {
+    print("jsonMap :${jsonMap}");
     var usernameKey = Info().userAPI;
     var passwordKey = Info().passAPI;
     final encodedCredentials =
         base64Encode(utf8.encode('$usernameKey:$passwordKey'));
     final response = await client.post(Uri.parse(Info().getProduct),
         headers: {
-          'Authorization': 'Basic $encodedCredentials',
           'Content-Type': 'application/json',
         },
         body: jsonMap);
-
-    // print(jsonMap);
-    // print('Response status: ${response.statusCode}');
-    // print('Response body: ${response.body}');
-
-    if (response.statusCode == 200) {
-      var rs = json.decode(response.body);
-      print(rs);
-      if (rs['status'] == 'success' && rs['data'].isNotEmpty) {
+    print("response ${response}");
+    var rs = json.decode(response.body);
+    if (rs['status'] == 200) {
+      print("rs : ${rs}");
+      if (rs['status'] == 200 && rs['data'].isNotEmpty) {
         return rs;
       } else {
         return null;
@@ -55,7 +148,11 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
   }
 
   Future<Map<String, dynamic>?> getQr(String strQr) async {
-    Map<String, String> map = {"product_name": strQr, "warehouse": "MBKE2"};
+    Uri uri = Uri.parse(strQr);
+    String qrId = uri.queryParameters['qr_id'] ?? '';
+    Map<String, String> map = {"qr_id": qrId, "branch_code": brance_code};
+    print("brance_code: $brance_code");
+    print("qr_id: $qrId");
     var body = json.encode(map);
     return await fetchProductDetail(http.Client(), body);
   }
@@ -64,70 +161,9 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
   void reassemble() {
     super.reassemble();
     if (Platform.isAndroid) {
-      controller?.pauseCamera();
+      controller.stop();
     } else if (Platform.isIOS) {
-      controller?.resumeCamera();
-    }
-  }
-
-  Future<void> _scanQRCodeFromImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        isProcessing = true;
-      });
-
-      try {
-        String? scannedQrCode =
-            await QrCodeToolsPlugin.decodeFrom(pickedFile.path);
-
-        if (scannedQrCode != null && scannedQrCode.isNotEmpty) {
-          qrText = scannedQrCode;
-          var productDetails = await getQr(qrText);
-          if (productDetails != null) {
-            var productData = productDetails['data'][0];
-            var promotionData = productDetails['promotion'];
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ProductDetailPage(
-                    data: productData, promotion: promotionData),
-              ),
-            ).then((_) {
-              setState(() {
-                isProcessing = false;
-              });
-            });
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้'),
-              ),
-            );
-            setState(() {
-              isProcessing = false;
-            });
-          }
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('ไม่สามารถอ่าน QR Code จากรูปภาพได้'),
-            ),
-          );
-          setState(() {
-            isProcessing = false;
-          });
-        }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('เกิดข้อผิดพลาดในการอ่าน QR Code: $e'),
-          ),
-        );
-        setState(() {
-          isProcessing = false;
-        });
-      }
+      controller.start();
     }
   }
 
@@ -146,93 +182,103 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
             children: <Widget>[
               Expanded(
                 flex: 5,
-                child: qr.QRView(
+                child: MobileScanner(
                   key: qrKey,
-                  onQRViewCreated: _onQRViewCreated,
-                  overlay: qr.QrScannerOverlayShape(
-                    borderColor: Colors.red,
-                    borderRadius: 10,
-                    borderLength: 30,
-                    borderWidth: 10,
-                    cutOutSize: 300,
-                  ),
+                  controller: controller,
+                  onDetect: (BarcodeCapture capture) async {
+                    final List<Barcode> barcodes = capture.barcodes;
+                    for (final barcode in barcodes) {
+                      if (!isProcessing) {
+                        setState(() {
+                          qrText = barcode.rawValue!;
+                          isProcessing = true;
+                          showLoading = true;
+                        });
+                        controller.stop();
+
+                        print('Scanned QR Code: $qrText');
+
+                        if (Uri.tryParse(qrText)?.hasAbsolutePath ?? false) {
+                          Uri uri = Uri.parse(qrText);
+                          String qrId = uri.queryParameters['qr_id'] ?? '';
+
+                          if (qrId.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้'),
+                              ),
+                            );
+                            setState(() {
+                              isProcessing = false;
+                              showLoading = false;
+                            });
+                            controller.start();
+                          } else {
+                            var productDetails = await getQr(qrText);
+
+                            print('Product Details: $productDetails');
+
+                            if (productDetails != null) {
+                              var productData = productDetails['data']?.first ?? {};
+                              var promotionData = productDetails['promotion'] ?? {};
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ProductDetailPage(
+                                      data: Map<String, dynamic>.from(productData), 
+                                      promotion: Map<String, dynamic>.from(promotionData)),
+                                ),
+                              ).then((_) {
+                                setState(() {
+                                  isProcessing = false;
+                                  showLoading = false;
+                                });
+                              });
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้'),
+                                ),
+                              );
+                              setState(() {
+                                isProcessing = false;
+                                showLoading = false;
+                              });
+                              controller.start();
+                            }
+                          }
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('QR Code ไม่ถูกต้อง'),
+                            ),
+                          );
+                          setState(() {
+                            isProcessing = false;
+                            showLoading = false;
+                          });
+                          controller.start();
+                        }
+                      }
+                    }
+                  },
                 ),
               ),
             ],
           ),
-          Positioned(
-            right: 20,
-            bottom: 60, // Adjust the bottom position as needed
-            child: FloatingActionButton(
-              backgroundColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                  side: BorderSide(width: 2, color: Colors.white),
-                  borderRadius: BorderRadius.circular(100)),
-              onPressed: _scanQRCodeFromImage,
-              child: const Icon(Icons.photo, color: Colors.white),
-            ),
-          ),
-          if (isProcessing)
-            Container(
-              color: Colors.black54,
-              child: const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
+          if (showLoading)
+            const Center(
+              child: CircularProgressIndicator(),
             ),
         ],
       ),
-      backgroundColor:
-          Colors.transparent, // Set background color to transparent
+      backgroundColor: Colors.transparent,
     );
-  }
-
-  void _onQRViewCreated(qr.QRViewController controller) {
-    this.controller = controller;
-
-    controller.scannedDataStream.listen((scanData) async {
-      if (!isProcessing) {
-        setState(() {
-          qrText = scanData.code!;
-          isProcessing = true;
-        });
-        controller.pauseCamera();
-
-        var productDetails = await getQr(qrText);
-
-        if (productDetails != null) {
-          var productData = productDetails['data'][0];
-          var promotionData = productDetails['promotion'];
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ProductDetailPage(
-                  data: productData, promotion: promotionData),
-            ),
-          ).then((_) {
-            setState(() {
-              isProcessing = false;
-            });
-          });
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้'),
-            ),
-          );
-          setState(() {
-            isProcessing = false;
-          });
-          controller.resumeCamera();
-        }
-      }
-    });
   }
 
   @override
   void dispose() {
-    controller?.dispose();
+    controller.dispose();
     super.dispose();
   }
 }

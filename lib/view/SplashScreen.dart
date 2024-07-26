@@ -3,6 +3,8 @@ import 'package:myapp/view/ChooseLogin.dart';
 import 'package:myapp/view/HomeView.dart';
 import 'package:myapp/model/user.dart';
 
+import 'Login.dart';
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -50,7 +52,8 @@ class _SplashScreenState extends State<SplashScreen>
     if (user.isLogin) {
       initialRoute = const HomeView();
     } else {
-      initialRoute = const ChooseLogin();
+      // initialRoute = const ChooseLogin();
+      initialRoute = const LoginView();
     }
     setState(() {});
   }
@@ -86,8 +89,7 @@ class _SplashScreenState extends State<SplashScreen>
                   width: 200,
                   // height: 200,
                 ),
-              
-                 const SizedBox(height: 5),
+                const SizedBox(height: 5),
                 const Text(
                   '1APPservices',
                   style: TextStyle(

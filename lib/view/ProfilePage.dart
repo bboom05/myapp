@@ -139,43 +139,43 @@ class _ProfilePageState extends State<ProfilePage> {
               leading: Icon(Icons.alternate_email, color: Colors.orange),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: GestureDetector(
-              onTap: () {
-                logout(); // logout function
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.exit_to_app, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text(
-                      "ออกจากระบบ",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontFamily: 'Kanit',
-                        fontSize: 16,
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          // Padding(
+          //   padding: const EdgeInsets.all(20.0),
+          //   child: GestureDetector(
+          //     onTap: () {
+          //       logout(); // logout function
+          //     },
+          //     child: Container(
+          //       padding:
+          //           const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+          //       decoration: BoxDecoration(
+          //         color: Colors.red,
+          //         borderRadius: BorderRadius.circular(5),
+          //       ),
+          //       child: Row(
+          //         mainAxisSize: MainAxisSize.min,
+          //         children: const [
+          //           Icon(Icons.exit_to_app, color: Colors.white),
+          //           SizedBox(width: 8),
+          //           Text(
+          //             "ออกจากระบบ",
+          //             style: TextStyle(
+          //               color: Colors.white,
+          //               fontFamily: 'Kanit',
+          //               fontSize: 16,
+          //             ),
+          //           ),
+          //           SizedBox(width: 8),
+          //           Icon(
+          //             Icons.arrow_forward_ios,
+          //             color: Colors.white,
+          //             size: 16,
+          //           ),
+          //         ],
+          //       ),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );

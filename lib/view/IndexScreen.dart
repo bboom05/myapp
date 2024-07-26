@@ -283,20 +283,20 @@ class _IndexScreenState extends State<IndexScreen>
                         .toList(),
                   ),
                   SizedBox(height: 16),
-                  Center(
-                    child: Text(
-                      'ผ่อนบัตรเครดิต',
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Kanit'),
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  product['promotion'] != null
-                      ? _buildPromotionTable(product['promotion'])
-                      : Text('ไม่มีข้อมูล',
-                          style: TextStyle(fontFamily: 'Kanit')),
+                  // Center(
+                  //   child: Text(
+                  //     'ผ่อนบัตรเครดิต',
+                  //     style: TextStyle(
+                  //         fontSize: 18,
+                  //         fontWeight: FontWeight.bold,
+                  //         fontFamily: 'Kanit'),
+                  //   ),
+                  // ),
+                  // SizedBox(height: 8),
+                  // product['promotion'] != null
+                  //     ? _buildPromotionTable(product['promotion'])
+                  //     : Text('ไม่มีข้อมูล',
+                  //         style: TextStyle(fontFamily: 'Kanit')),
                 ],
               ),
             ),
@@ -527,30 +527,30 @@ class _IndexScreenState extends State<IndexScreen>
               children: [
                 HeaderHome(),
                 const SizedBox(height: 5),
-                Container(
-                  height: 160, // Adjust height as needed
-                  child: PageView(
-                    controller: _pageController,
-                    children: [
-                      _buildNewsItem('ข่าวสาร 1', 'รายละเอียดข่าวสาร 1',
-                          'assets/images/nopic.png', '01-01-2024'),
-                      _buildNewsItem('ข่าวสาร 2', 'รายละเอียดข่าวสาร 2',
-                          'assets/images/nopic.png', '02-01-2024'),
-                      _buildNewsItem('ข่าวสาร 3', 'รายละเอียดข่าวสาร 3',
-                          'assets/images/nopic.png', '03-01-2024'),
-                    ],
-                  ),
-                ),
-                SmoothPageIndicator(
-                  controller: _pageController,
-                  count: 3,
-                  effect: WormEffect(
-                    dotWidth: 8.0,
-                    dotHeight: 8.0,
-                    activeDotColor: _selectedColor,
-                    dotColor: Colors.grey,
-                  ),
-                ),
+                // Container(
+                //   height: 160, // Adjust height as needed
+                //   child: PageView(
+                //     controller: _pageController,
+                //     children: [
+                //       _buildNewsItem('ข่าวสาร 1', 'รายละเอียดข่าวสาร 1',
+                //           'assets/images/nopic.png', '01-01-2024'),
+                //       _buildNewsItem('ข่าวสาร 2', 'รายละเอียดข่าวสาร 2',
+                //           'assets/images/nopic.png', '02-01-2024'),
+                //       _buildNewsItem('ข่าวสาร 3', 'รายละเอียดข่าวสาร 3',
+                //           'assets/images/nopic.png', '03-01-2024'),
+                //     ],
+                //   ),
+                // ),
+                // SmoothPageIndicator(
+                //   controller: _pageController,
+                //   count: 3,
+                //   effect: WormEffect(
+                //     dotWidth: 8.0,
+                //     dotHeight: 8.0,
+                //     activeDotColor: _selectedColor,
+                //     dotColor: Colors.grey,
+                //   ),
+                // ),
                 SizedBox(height: 10),
                 Container(
                   margin: const EdgeInsets.only(top: 16, left: 16, right: 16),

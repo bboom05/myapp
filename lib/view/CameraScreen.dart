@@ -14,17 +14,17 @@ class _CameraScreenState extends State<CameraScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Text('',
-            style: TextStyle(
-              color: Colors.white,
-            )),
-        backgroundColor: const Color(0xFFFF8C00),
-        iconTheme: const IconThemeData(
-          color: Colors.white, // ตั้งค่าสีของไอคอนย้อนกลับ
-        ),
-      ),
+      // appBar: AppBar(
+      //   automaticallyImplyLeading: false,
+      //   title: const Text('',
+      //       style: TextStyle(
+      //         color: Colors.white,
+      //       )),
+      //   backgroundColor: const Color(0xFFFF8C00),
+      //   iconTheme: const IconThemeData(
+      //     color: Colors.white, // ตั้งค่าสีของไอคอนย้อนกลับ
+      //   ),
+      // ),
       body: Center(
         child: ElevatedButton.icon(
           icon: const Icon(Icons.camera_alt), // เพิ่มไอคอนกล้อง

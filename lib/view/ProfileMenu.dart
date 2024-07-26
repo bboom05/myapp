@@ -123,6 +123,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text(
           'บัญชี',
           style: TextStyle(
@@ -132,10 +133,10 @@ class _ProfileMenuState extends State<ProfileMenu> {
           ),
         ),
         backgroundColor: Colors.white,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.orange),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        // leading: IconButton(
+        //   icon: Icon(Icons.arrow_back, color: Colors.orange),
+        //   onPressed: () => Navigator.of(context).pop(),
+        // ),
       ),
       body: Container(
         color: Colors.white,
@@ -156,76 +157,77 @@ class _ProfileMenuState extends State<ProfileMenu> {
                       );
                     },
                   ),
-                  _buildSectionTitle('ตั้งค่า'),
+                  // _buildSectionTitle('ตั้งค่า'),
                 ],
               ),
             ),
-            SliverList(
-              delegate: SliverChildListDelegate(
-                [
-                  _buildListTile(
-                    'ตั้งค่าการแชท',
-                    Icons.chat,
-                    onTap: () {},
-                  ),
-                  _buildListTile(
-                    'ตั้งค่าการแจ้งเตือน',
-                    Icons.notifications,
-                    onTap: () {},
-                  ),
-                  _buildListTile(
-                    'การตั้งค่าความเป็นส่วนตัว',
-                    Icons.lock,
-                    onTap: () {},
-                  ),
-                  _buildListTile(
-                    'ผู้ใช้ที่ถูกระงับ',
-                    Icons.block,
-                    onTap: () {},
-                  ),
-                  _buildListTile(
-                    'ภาษา / Language',
-                    Icons.language,
-                    onTap: () {},
-                  ),
-                ],
-              ),
-            ),
+            // SliverList(
+            //   delegate: SliverChildListDelegate(
+            //     [
+            //       // _buildListTile(
+            //       //   'ตั้งค่าการแชท',
+            //       //   Icons.chat,
+            //       //   onTap: () {},
+            //       // ),
+            //       // _buildListTile(
+            //       //   'ตั้งค่าการแจ้งเตือน',
+            //       //   Icons.notifications,
+            //       //   onTap: () {},
+            //       // ),
+            //       // _buildListTile(
+            //       //   'การตั้งค่าความเป็นส่วนตัว',
+            //       //   Icons.lock,
+            //       //   onTap: () {},
+            //       // ),
+            //       // _buildListTile(
+            //       //   'ผู้ใช้ที่ถูกระงับ',
+            //       //   Icons.block,
+            //       //   onTap: () {},
+            //       // ),
+            //       // _buildListTile(
+            //       //   'ภาษา / Language',
+            //       //   Icons.language,
+            //       //   onTap: () {},
+            //       // ),
+            //     ],
+            //   ),
+            // ),
             SliverToBoxAdapter(
               child: Column(
+                
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionTitle('ช่วยเหลือ'),
-                  _buildListTile(
-                    'ศูนย์ช่วยเหลือ',
-                    Icons.help,
-                    onTap: () {},
-                  ),
-                  _buildListTile(
-                    'กฎระเบียบในการใช้',
-                    Icons.rule,
-                    onTap: () {},
-                  ),
-                  _buildListTile(
-                    'นโยบายของ Shopee',
-                    Icons.policy,
-                    onTap: () {},
-                  ),
-                  _buildListTile(
-                    'ชอบใช้งาน Shopee? ให้คะแนนแอปเลย!',
-                    Icons.star,
-                    onTap: () {},
-                  ),
-                  _buildListTile(
-                    'เกี่ยวกับ',
-                    Icons.info,
-                    onTap: () {},
-                  ),
-                  _buildListTile(
-                    'คำขอลบบัญชีผู้ใช้',
-                    Icons.delete,
-                    onTap: () {},
-                  ),
+              //     _buildSectionTitle('ช่วยเหลือ'),
+              //     _buildListTile(
+              //       'ศูนย์ช่วยเหลือ',
+              //       Icons.help,
+              //       onTap: () {},
+              //     ),
+              //     _buildListTile(
+              //       'กฎระเบียบในการใช้',
+              //       Icons.rule,
+              //       onTap: () {},
+              //     ),
+              //     _buildListTile(
+              //       'นโยบายของ Shopee',
+              //       Icons.policy,
+              //       onTap: () {},
+              //     ),
+              //     _buildListTile(
+              //       'ชอบใช้งาน Shopee? ให้คะแนนแอปเลย!',
+              //       Icons.star,
+              //       onTap: () {},
+              //     ),
+              //     _buildListTile(
+              //       'เกี่ยวกับ',
+              //       Icons.info,
+              //       onTap: () {},
+              //     ),
+              //     _buildListTile(
+              //       'คำขอลบบัญชีผู้ใช้',
+              //       Icons.delete,
+              //       onTap: () {},
+              //     ),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 20.0),
                     child: GestureDetector(

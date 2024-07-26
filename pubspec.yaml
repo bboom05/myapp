@@ -31,21 +31,18 @@ dependencies:
   flutter:
     sdk: flutter
   animate_do:
+  flutter_plugin_android_lifecycle: ^2.0.6
   shared_preferences: ^2.0.5
-  flutter_barcode_scanner: ^2.0.0
   intl: ^0.17.0
-  barcode_scan2: ^4.1.4
   flutter_easyloading: ^3.0.3
   toast: ^0.3.0
   mobile_scanner: ^5.1.1
   syncfusion_flutter_datagrid: ^26.1.41
   image_picker: ^0.8.4+3
-  qr_code_tools: ^0.1.0
   shimmer: ^3.0.0
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.6
-  qr_code_scanner: ^1.0.1
   flutter_launcher_icons: ^0.13.1
   pull_to_refresh: ^2.0.0
   smooth_page_indicator: ^1.2.0

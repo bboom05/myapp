@@ -6,7 +6,8 @@ class ProductDetailPage extends StatelessWidget {
   final Map<String, dynamic> data;
   final Map<String, dynamic> promotion;
 
-  const ProductDetailPage({super.key, required this.data, required this.promotion});
+  const ProductDetailPage(
+      {super.key, required this.data, required this.promotion});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +23,8 @@ class ProductDetailPage extends StatelessWidget {
               );
             },
           ),
-          title: const Text('รายละเอียดสินค้า', style: TextStyle(color: Colors.white)),
+          title: const Text('รายละเอียดสินค้า',
+              style: TextStyle(color: Colors.white)),
           backgroundColor: const Color(0xFFFF8C00),
           iconTheme: const IconThemeData(color: Colors.white),
         ),
@@ -65,7 +67,7 @@ class ProductDetailPage extends StatelessWidget {
             _buildSectionTitle('รายละเอียดสินค้า', Icons.description),
             const SizedBox(height: 8),
             _buildInfoTile('แบรนด์', brand),
-            _buildInfoTile('บาร์โค้ด', barcode),
+            // _buildInfoTile('บาร์โค้ด', barcode),
             // _buildInfoTile('รหัสสาขา', warehouse),
             _buildInfoTile('สาขา', branchName),
             _buildInfoTile('หมวดหมู่', category),
@@ -74,25 +76,25 @@ class ProductDetailPage extends StatelessWidget {
             const SizedBox(height: 8),
             _buildVariantsCards(variants),
             const SizedBox(height: 10),
-            Container(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-                onPressed: () {
-                  _showModalBottomSheet(context, promotion);
-                },
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.credit_card, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('ผ่อนบัตรเครดิต'),
-                  ],
-                ),
-              ),
-            ),
+            // Container(
+            //   child: ElevatedButton(
+            //     style: ElevatedButton.styleFrom(
+            //       foregroundColor: Colors.black,
+            //       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            //     ),
+            //     onPressed: () {
+            //       _showModalBottomSheet(context, promotion);
+            //     },
+            //     child: const Row(
+            //       mainAxisSize: MainAxisSize.min,
+            //       children: [
+            //         Icon(Icons.credit_card, color: Colors.green),
+            //         SizedBox(width: 8),
+            //         Text('ผ่อนบัตรเครดิต'),
+            //       ],
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       ),
@@ -134,7 +136,8 @@ class ProductDetailPage extends StatelessWidget {
     );
   }
 
-  void _showModalBottomSheet(BuildContext context, Map<String, dynamic> promotion) {
+  void _showModalBottomSheet(
+      BuildContext context, Map<String, dynamic> promotion) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -165,13 +168,14 @@ class ProductDetailPage extends StatelessWidget {
   }
 
   Widget _buildPromotionTable(Map<String, dynamic> promotion) {
-    final installmentPlans = promotion['installment_plans'] as List<dynamic>? ?? [];
+    final installmentPlans =
+        promotion['installment_plans'] as List<dynamic>? ?? [];
 
     if (installmentPlans.isEmpty) {
       return const Text('ไม่มีโปรโมชั่น');
     }
 
-    final numberFormat = NumberFormat('#,##0', 'en_US');  // Number formatter
+    final numberFormat = NumberFormat('#,##0', 'en_US'); // Number formatter
 
     return Column(
       children: installmentPlans.map((plan) {
@@ -227,7 +231,6 @@ class ProductDetailPage extends StatelessWidget {
                   final bankName = bank['name'] ?? '-';
                   final plans = bank['plans'] as List<dynamic>? ?? [];
 
-
                   return TableRow(
                     children: [
                       Padding(
@@ -249,8 +252,10 @@ class ProductDetailPage extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: plans.map((plan) {
-                            final monthlyPayment = plan['monthly_payment'] ?? '-';
-                            final formattedPayment = numberFormat.format(monthlyPayment); // Format the number
+                            final monthlyPayment =
+                                plan['monthly_payment'] ?? '-';
+                            final formattedPayment = numberFormat
+                                .format(monthlyPayment); // Format the number
                             return Center(child: Text('$formattedPayment'));
                           }).toList(),
                         ),
@@ -275,6 +280,7 @@ class ProductDetailPage extends StatelessWidget {
     return Column(
       children: variants.map((variant) {
         final variantName = variant['variant'] ?? '-';
+        final barcodeVariants = variant['barcode'] ?? '-';
         final remainingQty = variant['remaining_qty'].toString();
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 4.0),
@@ -291,6 +297,10 @@ class ProductDetailPage extends StatelessWidget {
                   variantName,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
+                // Text(
+                //   'Barcode: $barcodeVariants',
+                //   style: const TextStyle(fontWeight: FontWeight.bold),
+                // ),
                 Text(
                   'สินค้าคงเหลือ: $remainingQty',
                   style: const TextStyle(color: Colors.grey),
