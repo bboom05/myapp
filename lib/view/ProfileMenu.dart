@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/model/user.dart';
 import 'package:myapp/view/ChooseLogin.dart';
+import 'package:myapp/view/Login.dart';
 import 'package:toast/toast.dart';
 import 'package:myapp/view/ProfilePage.dart'; // เพิ่มการนำเข้า ProfilePage
 
@@ -66,7 +67,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
                     duration: Toast.lengthLong, gravity: Toast.bottom);
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => const ChooseLogin()),
+                  MaterialPageRoute(builder: (context) => const LoginView()),
                   ModalRoute.withName("/"),
                 );
               },

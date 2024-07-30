@@ -6,6 +6,7 @@ import 'dart:convert';
 import '../model/user.dart';
 import '../system/info.dart';
 import 'ProductDetailPage.dart';
+import 'HomeView.dart'; // Import the HomeView
 
 class QRScannerPage extends StatefulWidget {
   const QRScannerPage({super.key});
@@ -49,16 +50,7 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
             String qrId = uri.queryParameters['qr_id'] ?? '';
 
             if (qrId.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้'),
-                ),
-              );
-              setState(() {
-                isProcessing = false;
-                showLoading = false;
-              });
-              controller.start();
+              _showPopup(context, 'ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้');
             } else {
               var productDetails = await getQr(qrText);
 
@@ -82,29 +74,11 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
                   });
                 });
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้'),
-                  ),
-                );
-                setState(() {
-                  isProcessing = false;
-                  showLoading = false;
-                });
-                controller.start();
+                _showPopup(context, 'ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้');
               }
             }
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('QR Code ไม่ถูกต้อง'),
-              ),
-            );
-            setState(() {
-              isProcessing = false;
-              showLoading = false;
-            });
-            controller.start();
+            _showPopup(context, 'QR Code ไม่ถูกต้อง');
           }
         }
       }
@@ -157,6 +131,35 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
     return await fetchProductDetail(http.Client(), body);
   }
 
+  void _showPopup(BuildContext context, String message) {
+    setState(() {
+      isProcessing = false;
+      showLoading = false;
+    });
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevents dismissing by tapping outside
+      builder: (context) {
+        return AlertDialog(
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('ตกลง'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomeView()),
+                  (Route<dynamic> route) => false,
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void reassemble() {
     super.reassemble();
@@ -203,16 +206,7 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
                           String qrId = uri.queryParameters['qr_id'] ?? '';
 
                           if (qrId.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้'),
-                              ),
-                            );
-                            setState(() {
-                              isProcessing = false;
-                              showLoading = false;
-                            });
-                            controller.start();
+                            _showPopup(context, 'ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้');
                           } else {
                             var productDetails = await getQr(qrText);
 
@@ -235,29 +229,11 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
                                 });
                               });
                             } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้'),
-                                ),
-                              );
-                              setState(() {
-                                isProcessing = false;
-                                showLoading = false;
-                              });
-                              controller.start();
+                              _showPopup(context, 'ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้');
                             }
                           }
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('QR Code ไม่ถูกต้อง'),
-                            ),
-                          );
-                          setState(() {
-                            isProcessing = false;
-                            showLoading = false;
-                          });
-                          controller.start();
+                          _showPopup(context, 'QR Code ไม่ถูกต้อง');
                         }
                       }
                     }

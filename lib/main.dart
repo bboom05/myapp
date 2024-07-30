@@ -3,8 +3,15 @@ import 'package:myapp/model/user.dart'; // Assuming this is where your User clas
 import 'package:myapp/view/ChooseLogin.dart';
 import 'package:myapp/view/HomeView.dart';
 import 'package:myapp/view/SplashScreen.dart';
+import 'package:flutter/services.dart';
+// void main() => runApp(const MyApp());
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]).then((_) {
+    runApp(MyApp());
+  });
+}
 
-void main() => runApp(const MyApp());
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
