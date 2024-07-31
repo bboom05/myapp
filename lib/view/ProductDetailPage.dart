@@ -278,38 +278,49 @@ class ProductDetailPage extends StatelessWidget {
     }
 
     return Column(
-      children: variants.map((variant) {
-        final variantName = variant['variant'] ?? '-';
-        final barcodeVariants = variant['barcode'] ?? '-';
-        final remainingQty = variant['remaining_qty'].toString();
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 4.0),
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
+  children: variants.map((variant) {
+    final variantName = variant['variant'] ?? '-';
+    final barcodeVariants = variant['barcode'] ?? '-';
+    final remainingQty = variant['remaining_qty'].toString();
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4.0),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, // Align all children to the start
+          children: [
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   variantName,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                // Text(
-                //   'Barcode: $barcodeVariants',
-                //   style: const TextStyle(fontWeight: FontWeight.bold),
-                // ),
                 Text(
                   'สินค้าคงเหลือ: $remainingQty',
                   style: const TextStyle(color: Colors.grey),
                 ),
               ],
             ),
-          ),
-        );
-      }).toList(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Text(
+                  'Barcode: $barcodeVariants',
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
+  }).toList(),
+);
+
   }
 }

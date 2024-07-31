@@ -206,11 +206,14 @@ class _IndexScreenState extends State<IndexScreen>
   void _generateTags() {
     Map<String, int> brandCount = {};
     for (var product in _allProductData) {
-      String brand = product['brand'];
-      if (brandCount.containsKey(brand)) {
-        brandCount[brand] = brandCount[brand]! + 1;
-      } else {
-        brandCount[brand] = 1;
+      String brand = product['brand'] ?? 'Unknown';
+      // print(brand);
+      if (brand != 'Unknown') {
+        if (brandCount.containsKey(brand)) {
+          brandCount[brand] = brandCount[brand]! + 1;
+        } else {
+          brandCount[brand] = 1;
+        }
       }
     }
 
@@ -229,6 +232,7 @@ class _IndexScreenState extends State<IndexScreen>
   }
 
   void _showProductDetails(Map<String, dynamic> product) {
+    final formatter = NumberFormat('#,##0.00');
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -236,6 +240,7 @@ class _IndexScreenState extends State<IndexScreen>
         return FractionallySizedBox(
           heightFactor: 0.6,
           child: Container(
+            width: MediaQuery.of(context).size.width,
             padding: const EdgeInsets.all(16.0),
             child: SingleChildScrollView(
               child: Column(
@@ -250,12 +255,16 @@ class _IndexScreenState extends State<IndexScreen>
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'ราคา: ${product['price']} บาท',
+                    // 'ราคา: ${product['price']} บาท',
+                    'ราคา: ${product['price'] != '0.00' ? formatter.format(double.parse(product['price'])) + ' บาท' : '-'}',
                     style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         fontFamily: 'Kanit'),
                   ),
+                  // SizedBox(height: 8),
+                  // Text('Barcode: ${product['barcode']}',
+                  //     style: TextStyle(fontFamily: 'Kanit')),
                   SizedBox(height: 8),
                   Text('คงเหลือ: ${product['all_qty']} ชิ้น',
                       style: TextStyle(fontFamily: 'Kanit')),
@@ -272,16 +281,43 @@ class _IndexScreenState extends State<IndexScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: (product['variants'] as List)
                         .map((variant) => Card(
-                              child: ListTile(
-                                title: Text(variant['variant'],
-                                    style: TextStyle(fontFamily: 'Kanit')),
-                                subtitle: Text(
-                                    'คงเหลือ: ${variant['remaining_qty']} ชิ้น',
-                                    style: TextStyle(fontFamily: 'Kanit')),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          variant['variant'] ?? '',
+                                          style: TextStyle(
+                                              fontFamily: 'Kanit',
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                        Text(
+                                          'คงเหลือ: ${variant['remaining_qty']} ชิ้น',
+                                          style: TextStyle(
+                                              fontFamily: 'Kanit',
+                                              color: Colors.grey),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Barcode: ${variant['barcode']}',
+                                      style: TextStyle(
+                                          fontFamily: 'Kanit',
+                                          color: Colors.black),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ))
                         .toList(),
                   ),
+
                   SizedBox(height: 16),
                   // Center(
                   //   child: Text(
@@ -614,9 +650,10 @@ class _IndexScreenState extends State<IndexScreen>
                   ),
                 ),
                 const SizedBox(height: 5),
+
                 Container(
                   margin: EdgeInsets.only(left: 15.0),
-                  height: 30,
+                  height: 35,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: tags.length,
@@ -645,34 +682,39 @@ class _IndexScreenState extends State<IndexScreen>
                               Text(
                                 tag.name,
                                 style: TextStyle(
-                                  // color: Colors.white,
-                                  color: tag.isSelected
-                                      ? Colors.grey.shade400
-                                      : Colors.white,
-                                  fontWeight: tag.isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                  fontFamily: 'Kanit',
-                                ),
+                                    // color: Colors.white,
+                                    color: tag.isSelected
+                                        ? Colors.grey.shade400
+                                        : Colors.white,
+                                    // fontWeight: tag.isSelected
+                                    //     ? FontWeight.bold
+                                    //     : FontWeight.normal,
+                                    // fontWeight: FontWeight.bold,
+                                    fontFamily: 'Kanit',
+                                    fontSize: 12),
                               ),
                               const SizedBox(width: 8),
                               Container(
-                                width: 23,
-                                padding: EdgeInsets.all(5),
+                                width: 30,
+                                padding: EdgeInsets.all(1),
                                 decoration: BoxDecoration(
-                                
                                   shape: BoxShape.circle,
                                   color: Colors.white,
                                 ),
                                 child: Center(
                                   child: Text(
                                     tag.quantity.toString(),
+                                    // '1230',
                                     style: TextStyle(
                                       color: tag.isSelected
                                           ? Colors.grey.shade400
                                           : Colors.black,
-                                      fontSize: 12,
-                                      fontFamily: 'Kanit',
+                                      fontSize:
+                                          tag.quantity.toString().length > 3
+                                              ? 8
+                                              : 10,
+                                      // fontSize: 8,
+                                      // fontFamily: 'Kanit',
                                     ),
                                   ),
                                 ),
@@ -714,12 +756,13 @@ class _IndexScreenState extends State<IndexScreen>
                                     onTap: () => _showProductDetails(product),
                                     child: Card(
                                       // color: Colors.grey.shade100,
-                                      color:Color(0xfff8f8f8),
+                                      color: Color(0xfff8f8f8),
                                       margin: EdgeInsets.symmetric(
                                           horizontal: 16, vertical: 8),
                                       child: Padding(
                                         // padding: EdgeInsets.all(16),
-                                        padding:EdgeInsets.symmetric(horizontal: 16,vertical: 8),
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 16, vertical: 8),
                                         child: Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
