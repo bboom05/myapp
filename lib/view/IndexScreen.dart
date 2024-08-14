@@ -1,14 +1,13 @@
-import 'dart:async'; // Add this import
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:myapp/model/user.dart';
 import 'package:myapp/view/HeaderHome.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart'; // Add this line
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../system/info.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
@@ -30,8 +29,8 @@ class _IndexScreenState extends State<IndexScreen>
   // Search
   final formKeyBranch = GlobalKey<FormState>();
   final searchBranch = TextEditingController();
-  final PageController _pageController = PageController(); // Add this line
-  Timer? _timer; // Add this line
+  final PageController _pageController = PageController();
+  Timer? _timer;
 
   var user = User();
   bool isLogin = false;
@@ -49,16 +48,18 @@ class _IndexScreenState extends State<IndexScreen>
   bool isBranchLoading = false;
 
   final List<Color> pastelColors = [
-    Color(0xFFFF6F61), // Bright Red
-    Color(0xFFFFB347), // Bright Orange
-    Color(0xFFFFD700), // Bright Yellow
-    Color(0xFF00BFFF), // Bright Blue
-    Color(0xFF9370DB), // Bright Purple
-    Color(0xFFFF69B4), // Bright Pink
-    Color(0xFFFFA07A), // Bright Peach
-    Color(0xFF20B2AA), // Bright Teal
-    Color(0xFF8A2BE2), // Bright Lavender
+    Color(0xFFFF6F61),
+    Color(0xFFFFB347),
+    Color(0xFFFFD700),
+    Color(0xFF00BFFF),
+    Color(0xFF9370DB),
+    Color(0xFFFF69B4),
+    Color(0xFFFFA07A),
+    Color(0xFF20B2AA),
+    Color(0xFF8A2BE2),
   ];
+
+  Set<String> _loggedProducts = Set<String>();
 
   @override
   void initState() {
@@ -70,7 +71,6 @@ class _IndexScreenState extends State<IndexScreen>
 
     fetchNearbyBranches();
 
-    // Initialize the timer for auto-slide
     _timer = Timer.periodic(Duration(seconds: 10), (Timer timer) {
       if (_pageController.hasClients) {
         int nextPage = _pageController.page!.toInt() + 1;
@@ -89,8 +89,8 @@ class _IndexScreenState extends State<IndexScreen>
   @override
   void dispose() {
     _tabController.dispose();
-    _pageController.dispose(); // Add this line
-    _timer?.cancel(); // Cancel the timer when the widget is disposed
+    _pageController.dispose();
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -207,7 +207,6 @@ class _IndexScreenState extends State<IndexScreen>
     Map<String, int> brandCount = {};
     for (var product in _allProductData) {
       String brand = product['brand'] ?? 'Unknown';
-      // print(brand);
       if (brand != 'Unknown') {
         if (brandCount.containsKey(brand)) {
           brandCount[brand] = brandCount[brand]! + 1;
@@ -231,8 +230,25 @@ class _IndexScreenState extends State<IndexScreen>
     });
   }
 
-  void _showProductDetails(Map<String, dynamic> product) {
+  Future<void> _showProductDetails(Map<String, dynamic> product) async {
     final formatter = NumberFormat('#,##0.00');
+
+    // Log activity only if this product hasn't been logged yet
+    if (!_loggedProducts.contains(product['product_name'])) {
+      await _logActivity(
+        employeeCode: user.employee_code,
+        branchCode: user.brance_code,
+        model: product['product_name'],
+        activityType: 'click_product',
+        detailSearch: searchBranch.text,
+        tagsBrand: tags
+            .where((tag) => tag.isSelected)
+            .map((tag) => tag.name)
+            .join(','),
+      );
+      _loggedProducts.add(product['product_name']);
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -255,16 +271,12 @@ class _IndexScreenState extends State<IndexScreen>
                   ),
                   SizedBox(height: 8),
                   Text(
-                    // 'ราคา: ${product['price']} บาท',
                     'ราคา: ${product['price'] != '0.00' ? formatter.format(double.parse(product['price'])) + ' บาท' : '-'}',
                     style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         fontFamily: 'Kanit'),
                   ),
-                  // SizedBox(height: 8),
-                  // Text('Barcode: ${product['barcode']}',
-                  //     style: TextStyle(fontFamily: 'Kanit')),
                   SizedBox(height: 8),
                   Text('คงเหลือ: ${product['all_qty']} ชิ้น',
                       style: TextStyle(fontFamily: 'Kanit')),
@@ -317,22 +329,7 @@ class _IndexScreenState extends State<IndexScreen>
                             ))
                         .toList(),
                   ),
-
                   SizedBox(height: 16),
-                  // Center(
-                  //   child: Text(
-                  //     'ผ่อนบัตรเครดิต',
-                  //     style: TextStyle(
-                  //         fontSize: 18,
-                  //         fontWeight: FontWeight.bold,
-                  //         fontFamily: 'Kanit'),
-                  //   ),
-                  // ),
-                  // SizedBox(height: 8),
-                  // product['promotion'] != null
-                  //     ? _buildPromotionTable(product['promotion'])
-                  //     : Text('ไม่มีข้อมูล',
-                  //         style: TextStyle(fontFamily: 'Kanit')),
                 ],
               ),
             ),
@@ -340,6 +337,42 @@ class _IndexScreenState extends State<IndexScreen>
         );
       },
     );
+  }
+
+  Future<void> _logActivity({
+    required String employeeCode,
+    required String branchCode,
+    required String model,
+    required String activityType,
+    required String detailSearch,
+    required String tagsBrand,
+  }) async {
+    Map<String, dynamic> logData = {
+      'employee_code': employeeCode,
+      'branch_code': branchCode,
+      'model': model,
+      'activity_type': activityType,
+      'detail_search': detailSearch,
+      'tags_brand': tagsBrand,
+    };
+
+    var usernameKey = Info().userAPI;
+    var passwordKey = Info().passAPI;
+    final encodedCredentials =
+        base64Encode(utf8.encode('$usernameKey:$passwordKey'));
+
+    // final response = await http.post(Uri.parse(Info().logActivity),
+    //     headers: {
+    //       'Authorization': 'Basic $encodedCredentials',
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: json.encode(logData));
+    print('logActivity ${json.encode(logData)}');
+    // if (response.statusCode == 200) {
+    //   print('Log activity successful');
+    // } else {
+    //   print('Failed to log activity');
+    // }
   }
 
   Widget _buildPromotionTable(Map<String, dynamic> promotions) {
@@ -491,7 +524,6 @@ class _IndexScreenState extends State<IndexScreen>
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Card(
-        // color: Color(0xffF7E7CE),
         color: Colors.white,
         shape: BeveledRectangleBorder(
           borderRadius: BorderRadius.circular(4.0),
@@ -505,14 +537,12 @@ class _IndexScreenState extends State<IndexScreen>
               ClipRRect(
                 borderRadius: BorderRadius.circular(8.0),
                 child: Container(
-                    width: 120, // Adjust width as needed
-                    height: 120, // Adjust height as needed
+                    width: 120,
+                    height: 120,
                     child: Image.asset(
                       imageUrl,
                       fit: BoxFit.cover,
-                    )
-                    // Image.network(imageUrl, fit: BoxFit.cover),
-                    ),
+                    )),
               ),
               SizedBox(width: 16),
               Expanded(
@@ -563,30 +593,6 @@ class _IndexScreenState extends State<IndexScreen>
               children: [
                 HeaderHome(),
                 const SizedBox(height: 5),
-                // Container(
-                //   height: 160, // Adjust height as needed
-                //   child: PageView(
-                //     controller: _pageController,
-                //     children: [
-                //       _buildNewsItem('ข่าวสาร 1', 'รายละเอียดข่าวสาร 1',
-                //           'assets/images/nopic.png', '01-01-2024'),
-                //       _buildNewsItem('ข่าวสาร 2', 'รายละเอียดข่าวสาร 2',
-                //           'assets/images/nopic.png', '02-01-2024'),
-                //       _buildNewsItem('ข่าวสาร 3', 'รายละเอียดข่าวสาร 3',
-                //           'assets/images/nopic.png', '03-01-2024'),
-                //     ],
-                //   ),
-                // ),
-                // SmoothPageIndicator(
-                //   controller: _pageController,
-                //   count: 3,
-                //   effect: WormEffect(
-                //     dotWidth: 8.0,
-                //     dotHeight: 8.0,
-                //     activeDotColor: _selectedColor,
-                //     dotColor: Colors.grey,
-                //   ),
-                // ),
                 SizedBox(height: 10),
                 Container(
                   margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
@@ -600,8 +606,7 @@ class _IndexScreenState extends State<IndexScreen>
                             LengthLimitingTextInputFormatter(20),
                           ],
                           decoration: InputDecoration(
-                            prefixIcon:
-                                Icon(Icons.search), // Add search icon here
+                            prefixIcon: Icon(Icons.search),
                             contentPadding: const EdgeInsets.symmetric(
                                 vertical: 8.0, horizontal: 20.0),
                             hintText: 'ชื่อสินค้า',
@@ -642,15 +647,13 @@ class _IndexScreenState extends State<IndexScreen>
                           },
                           keyboardType: TextInputType.text,
                           textInputAction: TextInputAction.search,
-                          style: TextStyle(
-                              fontFamily: 'Kanit'), // Apply Kanit font here
+                          style: TextStyle(fontFamily: 'Kanit'),
                         ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 5),
-
                 Container(
                   margin: EdgeInsets.only(left: 15.0),
                   height: 35,
@@ -666,30 +669,18 @@ class _IndexScreenState extends State<IndexScreen>
                           margin: const EdgeInsets.symmetric(horizontal: 4.0),
                           decoration: BoxDecoration(
                             color: tag.isSelected
-                                // ? tag.color.withOpacity(0.5)
                                 ? Colors.grey.shade100
                                 : tag.color,
                             borderRadius: BorderRadius.circular(20.0),
-                            // border: tag.isSelected
-                            //     ? Border.all(
-                            //         color: Colors.black,
-                            //         width: 1.5,
-                            //       )
-                            //     : null,
                           ),
                           child: Row(
                             children: [
                               Text(
                                 tag.name,
                                 style: TextStyle(
-                                    // color: Colors.white,
                                     color: tag.isSelected
                                         ? Colors.grey.shade400
                                         : Colors.white,
-                                    // fontWeight: tag.isSelected
-                                    //     ? FontWeight.bold
-                                    //     : FontWeight.normal,
-                                    // fontWeight: FontWeight.bold,
                                     fontFamily: 'Kanit',
                                     fontSize: 12),
                               ),
@@ -704,7 +695,6 @@ class _IndexScreenState extends State<IndexScreen>
                                 child: Center(
                                   child: Text(
                                     tag.quantity.toString(),
-                                    // '1230',
                                     style: TextStyle(
                                       color: tag.isSelected
                                           ? Colors.grey.shade400
@@ -713,8 +703,6 @@ class _IndexScreenState extends State<IndexScreen>
                                           tag.quantity.toString().length > 3
                                               ? 8
                                               : 10,
-                                      // fontSize: 8,
-                                      // fontFamily: 'Kanit',
                                     ),
                                   ),
                                 ),
@@ -755,12 +743,10 @@ class _IndexScreenState extends State<IndexScreen>
                                   return GestureDetector(
                                     onTap: () => _showProductDetails(product),
                                     child: Card(
-                                      // color: Colors.grey.shade100,
                                       color: Color(0xfff8f8f8),
                                       margin: EdgeInsets.symmetric(
                                           horizontal: 16, vertical: 8),
                                       child: Padding(
-                                        // padding: EdgeInsets.all(16),
                                         padding: EdgeInsets.symmetric(
                                             horizontal: 16, vertical: 8),
                                         child: Column(

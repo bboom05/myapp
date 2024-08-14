@@ -15,10 +15,12 @@ class Info {
   String baseUrlApi = _baseUrlApi;
 
   String userLogin = '${_baseUrlApi}datauser/index.php';
+  String getBranchData = '${_baseUrlApi}datauser/index.php';
   // String getProduct = '${_baseUrlApi}datauser/getProduct.php'; // ดึงข้อมูลสินค้าที่มาจากการสแกนจาก API 
   String getProduct = '${_baseUrlApiQR}qr_redirect'; // ดึงข้อมูลสินค้าที่มาจากการสแกนจาก API 
+  String searchProduct = '${_baseUrlApi}datauser/searchProductTest.php'; // ดึงข้อมูลสินค้า
+
   String getGroupBrand = '${_baseUrlApi}datauser/groupBrandTags.php'; // ดึงข้อมูล Brand
-  String searchProduct = '${_baseUrlApi}datauser/searchProduct.php'; // ดึงข้อมูลสินค้า
   String getProductExpress = '${_baseUrlSecondApi}data'; // ดึงข้อมูลสินค้าที่มาจากการสแกนจาก API 
 
   Info() : super();

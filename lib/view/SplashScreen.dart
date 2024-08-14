@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:myapp/view/ChooseLogin.dart';
 import 'package:myapp/view/HomeView.dart';
 import 'package:myapp/model/user.dart';
-
+import 'package:myapp/system/info.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'Login.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -50,12 +52,53 @@ class _SplashScreenState extends State<SplashScreen>
     var user = User();
     await user.init();
     if (user.isLogin) {
+      await fetchBranchData(user.employee_code);
       initialRoute = const HomeView();
     } else {
-      // initialRoute = const ChooseLogin();
       initialRoute = const LoginView();
     }
     setState(() {});
+  }
+
+  Future<void> fetchBranchData(String employeeId) async {
+    var usernameKey = Info().userAPI;
+    var passwordKey = Info().passAPI;
+    final encodedCredentials =
+        base64Encode(utf8.encode('$usernameKey:$passwordKey'));
+    final response = await http.post(
+      Uri.parse(Info()
+          .getBranchData), // Update this with your actual API URL for fetching branch data
+      headers: {
+        'Authorization': 'Basic $encodedCredentials',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'employee_code': employeeId}),
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> employees = json.decode(response.body);
+      var employee = findEmployeeByCode(employees, employeeId);
+      // print("employee ${employee}");
+      if (employee != null) {
+        var user = User();
+        await user.init();
+        user.brance_code = employee['brance_code'];
+        user.brance_name = employee['brance_name'];
+      }
+    } else {
+      print('Failed to fetch branch data with status: ${response.statusCode}');
+    }
+  }
+
+  Map<String, dynamic>? findEmployeeByCode(
+      List<dynamic> employees, String employeeCode) {
+    try {
+      return employees
+          .firstWhere((emp) => emp['employee_code'] == employeeCode);
+    } catch (e) {
+      print('Error finding employee: $e');
+      return null;
+    }
   }
 
   @override

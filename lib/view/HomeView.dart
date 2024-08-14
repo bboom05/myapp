@@ -36,6 +36,8 @@ class _HomeViewState extends State<HomeView> {
     getUsers();
   }
 
+  
+
   getUsers() async {
     await user.init();
     setState(() {
