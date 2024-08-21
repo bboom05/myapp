@@ -1,6 +1,6 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.superappbytg">
     <application
-        android:label="1APPServices"
+        android:label="Super App"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity

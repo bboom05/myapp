@@ -134,7 +134,7 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
                 const SizedBox(height: 5),
                 const Text(
-                  '1APPservices',
+                  'Super App',
                   style: TextStyle(
                     fontSize: 18,
                     color: Color(0xFFFF8C00), // สีข้อความเป็นสีดำ
