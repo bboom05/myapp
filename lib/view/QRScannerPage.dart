@@ -98,12 +98,13 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
   Future<Map<String, dynamic>?> fetchProductDetail(
       http.Client client, String jsonMap) async {
     print("jsonMap :${jsonMap}");
-    var usernameKey = Info().userAPI;
-    var passwordKey = Info().passAPI;
+    var usernameKey = Info().userAPIProduct;
+    var passwordKey = Info().passAPIProduct;
     final encodedCredentials =
         base64Encode(utf8.encode('$usernameKey:$passwordKey'));
     final response = await client.post(Uri.parse(Info().getProduct),
         headers: {
+          'Authorization': 'Basic $encodedCredentials',
           'Content-Type': 'application/json',
         },
         body: jsonMap);
