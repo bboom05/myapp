@@ -96,7 +96,8 @@ class _ProfileMenuState extends State<ProfileMenu> {
     );
   }
 
-  Widget _buildListTile(String title, IconData icon, {required VoidCallback onTap}) {
+  Widget _buildListTile(String title, IconData icon,
+      {required VoidCallback onTap}) {
     return Column(
       children: [
         ListTile(
@@ -125,11 +126,23 @@ class _ProfileMenuState extends State<ProfileMenu> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFFFFA726), // สีส้มอ่อน
+                Color(0xFFFF5722), // สีส้มเข้ม
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         title: const Text(
           'บัญชี',
           style: TextStyle(
             fontFamily: 'Kanit',
-            color: Colors.black,
+            color: Colors.white,
             fontWeight: FontWeight.w300, // ใช้ตัวอักษรแบบบาง
           ),
         ),
@@ -154,7 +167,9 @@ class _ProfileMenuState extends State<ProfileMenu> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const ProfilePage()), // ไปหน้า ProfilePage
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                const ProfilePage()), // ไปหน้า ProfilePage
                       );
                     },
                   ),
@@ -195,40 +210,39 @@ class _ProfileMenuState extends State<ProfileMenu> {
             // ),
             SliverToBoxAdapter(
               child: Column(
-                
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-              //     _buildSectionTitle('ช่วยเหลือ'),
-              //     _buildListTile(
-              //       'ศูนย์ช่วยเหลือ',
-              //       Icons.help,
-              //       onTap: () {},
-              //     ),
-              //     _buildListTile(
-              //       'กฎระเบียบในการใช้',
-              //       Icons.rule,
-              //       onTap: () {},
-              //     ),
-              //     _buildListTile(
-              //       'นโยบายของ Shopee',
-              //       Icons.policy,
-              //       onTap: () {},
-              //     ),
-              //     _buildListTile(
-              //       'ชอบใช้งาน Shopee? ให้คะแนนแอปเลย!',
-              //       Icons.star,
-              //       onTap: () {},
-              //     ),
-              //     _buildListTile(
-              //       'เกี่ยวกับ',
-              //       Icons.info,
-              //       onTap: () {},
-              //     ),
-              //     _buildListTile(
-              //       'คำขอลบบัญชีผู้ใช้',
-              //       Icons.delete,
-              //       onTap: () {},
-              //     ),
+                  //     _buildSectionTitle('ช่วยเหลือ'),
+                  //     _buildListTile(
+                  //       'ศูนย์ช่วยเหลือ',
+                  //       Icons.help,
+                  //       onTap: () {},
+                  //     ),
+                  //     _buildListTile(
+                  //       'กฎระเบียบในการใช้',
+                  //       Icons.rule,
+                  //       onTap: () {},
+                  //     ),
+                  //     _buildListTile(
+                  //       'นโยบายของ Shopee',
+                  //       Icons.policy,
+                  //       onTap: () {},
+                  //     ),
+                  //     _buildListTile(
+                  //       'ชอบใช้งาน Shopee? ให้คะแนนแอปเลย!',
+                  //       Icons.star,
+                  //       onTap: () {},
+                  //     ),
+                  //     _buildListTile(
+                  //       'เกี่ยวกับ',
+                  //       Icons.info,
+                  //       onTap: () {},
+                  //     ),
+                  //     _buildListTile(
+                  //       'คำขอลบบัญชีผู้ใช้',
+                  //       Icons.delete,
+                  //       onTap: () {},
+                  //     ),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 20.0),
                     child: GestureDetector(
@@ -237,7 +251,8 @@ class _ProfileMenuState extends State<ProfileMenu> {
                       },
                       child: Container(
                         margin: EdgeInsets.symmetric(horizontal: 20),
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 10, horizontal: 20),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.red),
                           borderRadius: BorderRadius.circular(5),
@@ -250,7 +265,8 @@ class _ProfileMenuState extends State<ProfileMenu> {
                               style: TextStyle(
                                 color: Colors.red,
                                 fontFamily: 'Kanit',
-                                fontWeight: FontWeight.w300, // ใช้ตัวอักษรแบบบาง
+                                fontWeight:
+                                    FontWeight.w300, // ใช้ตัวอักษรแบบบาง
                                 fontSize: 16,
                               ),
                             ),

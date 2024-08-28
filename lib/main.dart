@@ -4,14 +4,14 @@ import 'package:myapp/view/ChooseLogin.dart';
 import 'package:myapp/view/HomeView.dart';
 import 'package:myapp/view/SplashScreen.dart';
 import 'package:flutter/services.dart';
-// void main() => runApp(const MyApp());
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]).then((_) {
+  SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]).then((_) {
     runApp(MyApp());
   });
 }
-
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -42,9 +42,13 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
+      theme: ThemeData(
+        scaffoldBackgroundColor: Colors.white, // พื้นหลังของทั้งแอปเป็นสีขาว
+        primarySwatch: Colors.orange, // กำหนดสีหลักตามความต้องการ
+      ),
       // home: initialRoute,
-      home: SplashScreen(),
+      home: const SplashScreen(),
     );
   }
 }

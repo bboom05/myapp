@@ -84,9 +84,21 @@ class _ProfilePageState extends State<ProfilePage> {
       appBar: AppBar(
         // automaticallyImplyLeading: false,
         title: const Text('Profile', style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFFFF8C00),
+        // backgroundColor: const Color(0xFFFF8C00),
         iconTheme: const IconThemeData(
             color: Colors.white), // ตั้งค่าสีของไอคอนย้อนกลับ
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFFFFA726), // สีส้มอ่อน
+                Color(0xFFFF5722), // สีส้มเข้ม
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: ListView(
         children: [

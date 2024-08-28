@@ -77,7 +77,7 @@ class _LoginViewState extends State<LoginView> {
           user.brance_code = employee["brance_code"].toString();
           user.brance_name = employee["brance_name"].toString();
           user.email = employee["email"].toString();
-       
+
           // user.authenToken = rs["authenToken"].toString();
           // Toast.show("ยินดีต้อนรับ",
           //     // ignore: use_build_context_synchronously
@@ -91,7 +91,8 @@ class _LoginViewState extends State<LoginView> {
           );
         } else {
           setState(() {
-            errorText = "รหัสพนักงานหรือรหัสผ่านไม่ถูกต้อง กรุณาลลองใหม่อีกครั้ง";
+            errorText =
+                "รหัสพนักงานหรือรหัสผ่านไม่ถูกต้อง กรุณาลลองใหม่อีกครั้ง";
           });
         }
       } else {
@@ -166,14 +167,25 @@ class _LoginViewState extends State<LoginView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        
         title: const Text('Login',
             style: TextStyle(
               color: Colors.white,
             )),
-        backgroundColor: const Color(0xFFFF8C00),
+        // backgroundColor: const Color(0xFFFF8C00),
         iconTheme: const IconThemeData(
           color: Colors.white, // ตั้งค่าสีของไอคอนย้อนกลับ
+        ),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFFFFA726), // สีส้มอ่อน
+                Color(0xFFFF5722), // สีส้มเข้ม
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
         ),
       ),
       body: SingleChildScrollView(

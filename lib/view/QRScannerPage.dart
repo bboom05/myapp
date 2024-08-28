@@ -6,7 +6,7 @@ import 'dart:convert';
 import '../model/user.dart';
 import '../system/info.dart';
 import 'ProductDetailPage.dart';
-import 'HomeView.dart'; // Import the HomeView
+import 'HomeView.dart';
 
 class QRScannerPage extends StatefulWidget {
   const QRScannerPage({super.key});
@@ -43,8 +43,6 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
           });
           controller.stop();
 
-          print('Scanned QR Code init: $qrText');
-
           if (Uri.tryParse(qrText)?.hasAbsolutePath ?? false) {
             Uri uri = Uri.parse(qrText);
             String qrId = uri.queryParameters['qr_id'] ?? '';
@@ -54,17 +52,14 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
             } else {
               var productDetails = await getQr(qrText);
 
-              print('Product Details init: $productDetails');
-
               if (productDetails != null) {
                 var productData = productDetails['data']?.first ?? {};
                 var promotionData = productDetails['promotion'] ?? {};
-                print("ProductData $productData");
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
                     builder: (context) => ProductDetailPage(
-                        data: Map<String, dynamic>.from(productData), 
+                        data: Map<String, dynamic>.from(productData),
                         promotion: Map<String, dynamic>.from(promotionData)),
                   ),
                 ).then((_) {
@@ -97,9 +92,8 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
 
   Future<Map<String, dynamic>?> fetchProductDetail(
       http.Client client, String jsonMap) async {
-    print("jsonMap :${jsonMap}");
-    var usernameKey = Info().userAPIProduct;
-    var passwordKey = Info().passAPIProduct;
+    var usernameKey = Info().userAPIProd;
+    var passwordKey = Info().passAPIProd;
     final encodedCredentials =
         base64Encode(utf8.encode('$usernameKey:$passwordKey'));
     final response = await client.post(Uri.parse(Info().getProduct),
@@ -108,27 +102,20 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
           'Content-Type': 'application/json',
         },
         body: jsonMap);
-    print("response ${response}");
     var rs = json.decode(response.body);
-    if (rs['status'] == 200) {
-      print("rs : ${rs}");
-      if (rs['status'] == 200 && rs['data'].isNotEmpty) {
-        return rs;
-      } else {
-        return null;
-      }
-    } else {
-      return null;
+    print("RS : ${rs}");
+    if (rs['status'] == 200 && rs['data'].isNotEmpty) {
+      return rs;
     }
+    return null;
   }
 
   Future<Map<String, dynamic>?> getQr(String strQr) async {
     Uri uri = Uri.parse(strQr);
     String qrId = uri.queryParameters['qr_id'] ?? '';
     Map<String, String> map = {"qr_id": qrId, "branch_code": brance_code};
-    print("brance_code: $brance_code");
-    print("qr_id: $qrId");
     var body = json.encode(map);
+    print("BODY MAP : ${body}");
     return await fetchProductDetail(http.Client(), body);
   }
 
@@ -139,7 +126,7 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
     });
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevents dismissing by tapping outside
+      barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
           content: Text(message),
@@ -174,82 +161,70 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // appBar: AppBar(
+      //   title: const Text('QR Code Scanner', style: TextStyle(color: Colors.white)),
+      //   // backgroundColor: const Color(0xFFFF8C00),
+      //   backgroundColor: Colors.transparent,
+      //   shadowColor: Colors.transparent,
+      //   elevation: 0,
+      //   iconTheme: const IconThemeData(color: Colors.white),
+      // ),
       appBar: AppBar(
         title: const Text('QR Code Scanner',
             style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFFFF8C00),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor:
+            Colors.transparent, // ตั้งค่าพื้นหลัง AppBar ให้โปร่งใส
+        elevation: 0, // ลบเงาใต้ AppBar
+        iconTheme: const IconThemeData(
+            color: Colors.white), // ตั้งค่าสีของไอคอนใน AppBar เป็นสีขาว
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFFFFA726), // สีส้มอ่อน
+                Color(0xFFFF5722), // สีส้มเข้ม
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: Stack(
         children: <Widget>[
-          Column(
-            children: <Widget>[
-              Expanded(
-                flex: 5,
-                child: MobileScanner(
-                  key: qrKey,
-                  controller: controller,
-                  onDetect: (BarcodeCapture capture) async {
-                    final List<Barcode> barcodes = capture.barcodes;
-                    for (final barcode in barcodes) {
-                      if (!isProcessing) {
-                        setState(() {
-                          qrText = barcode.rawValue!;
-                          isProcessing = true;
-                          showLoading = true;
-                        });
-                        controller.stop();
-
-                        print('Scanned QR Code: $qrText');
-
-                        if (Uri.tryParse(qrText)?.hasAbsolutePath ?? false) {
-                          Uri uri = Uri.parse(qrText);
-                          String qrId = uri.queryParameters['qr_id'] ?? '';
-
-                          if (qrId.isEmpty) {
-                            _showPopup(context, 'ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้');
-                          } else {
-                            var productDetails = await getQr(qrText);
-
-                            print('Product Details: $productDetails');
-
-                            if (productDetails != null) {
-                              var productData = productDetails['data']?.first ?? {};
-                              var promotionData = productDetails['promotion'] ?? {};
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ProductDetailPage(
-                                      data: Map<String, dynamic>.from(productData), 
-                                      promotion: Map<String, dynamic>.from(promotionData)),
-                                ),
-                              ).then((_) {
-                                setState(() {
-                                  isProcessing = false;
-                                  showLoading = false;
-                                });
-                              });
-                            } else {
-                              _showPopup(context, 'ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้');
-                            }
-                          }
-                        } else {
-                          _showPopup(context, 'QR Code ไม่ถูกต้อง');
-                        }
-                      }
-                    }
-                  },
-                ),
-              ),
-            ],
+          MobileScanner(
+            key: qrKey,
+            controller: controller,
+          ),
+          // Focus overlay with rounded corners
+          Positioned.fill(
+            child: CustomPaint(
+              painter: QRScannerOverlayPainter(),
+              child: Container(),
+            ),
           ),
           if (showLoading)
             const Center(
               child: CircularProgressIndicator(),
             ),
+          // Centered text instruction
+          const Positioned(
+            top: 50,
+            left: 0,
+            right: 0,
+            child: Center(
+                // child: Text(
+                //   "Align QR code within the frame",
+                //   style: TextStyle(
+                //     fontSize: 16,
+                //     color: Colors.white,
+                //     fontWeight: FontWeight.bold,
+                //   ),
+                // ),
+                ),
+          ),
         ],
       ),
-      backgroundColor: Colors.transparent,
     );
   }
 
@@ -257,5 +232,60 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
   void dispose() {
     controller.dispose();
     super.dispose();
+  }
+}
+
+class QRScannerOverlayPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    final width = size.width * 0.75;
+    final height = size.height * 0.4;
+
+    final left = (size.width - width) / 2;
+    final top = (size.height - height) / 2;
+    final right = left + width;
+    final bottom = top + height;
+
+    final cornerLength = 40.0;
+    final radius = Radius.circular(10);
+
+    // Draw top-left corner
+    canvas.drawLine(Offset(left, top), Offset(left + cornerLength, top), paint);
+    canvas.drawLine(Offset(left, top), Offset(left, top + cornerLength), paint);
+
+    // Draw top-right corner
+    canvas.drawLine(
+        Offset(right, top), Offset(right - cornerLength, top), paint);
+    canvas.drawLine(
+        Offset(right, top), Offset(right, top + cornerLength), paint);
+
+    // Draw bottom-left corner
+    canvas.drawLine(
+        Offset(left, bottom), Offset(left + cornerLength, bottom), paint);
+    canvas.drawLine(
+        Offset(left, bottom), Offset(left, bottom - cornerLength), paint);
+
+    // Draw bottom-right corner
+    canvas.drawLine(
+        Offset(right, bottom), Offset(right - cornerLength, bottom), paint);
+    canvas.drawLine(
+        Offset(right, bottom), Offset(right, bottom - cornerLength), paint);
+
+    // Draw blur effect for areas outside the scanning frame
+    // final overlayPaint = Paint()..color = Colors.black.withOpacity(0.5);
+    // canvas.drawRect(Rect.fromLTRB(0, 0, size.width, top), overlayPaint);
+    // canvas.drawRect(Rect.fromLTRB(0, bottom, size.width, size.height), overlayPaint);
+    // canvas.drawRect(Rect.fromLTRB(0, top, left, bottom), overlayPaint);
+    // canvas.drawRect(Rect.fromLTRB(right, top, size.width, bottom), overlayPaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return false;
   }
 }
