@@ -27,6 +27,19 @@ class Info {
 
   String getGroupBrand = '${_baseUrlApi}datauser/groupBrandTags.php'; // ดึงข้อมูล Brand
   String getProductExpress = '${_baseUrlSecondApi}data'; // ดึงข้อมูลสินค้าที่มาจากการสแกนจาก API 
+  String getPremiumData = '${_baseUrlApi}datauser/getPremiumData.php';
+    
 
   Info() : super();
 }
+
+
+
+// https://app01.tgfone.com/api-Flutter/datauser/index.php Login
+// https://app01.tgfone.com/qrcode/qr_redirect // ดึงข้อมูลสินค้าที่มาจากการสแกนจาก API
+// https://arnold.tg.co.th:3001/api-Flutterv2/dataproducts  ดึงข้อมูลสินค้าทั้งหมด หน้าแรกแอป
+// https://arnold.tg.co.th:3001/api-Flutterv2/data  ดึงข้อมูลรายละเอียดสินค้าจากการกดรายการสินค้าที่หน้าแรกของแอป
+
+
+
+

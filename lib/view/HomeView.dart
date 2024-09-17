@@ -29,14 +29,15 @@ class _HomeViewState extends State<HomeView> {
       IndexScreen(),
       const CameraScreen(),
       const ProfileMenu(),
-      ProductDetailPage(data: {},promotion: {},),
+      ProductDetailPage(
+        data: {},
+        promotion: {},
+      ),
       QRScannerPage(),
     ];
 
     getUsers();
   }
-
-  
 
   getUsers() async {
     await user.init();
@@ -48,7 +49,10 @@ class _HomeViewState extends State<HomeView> {
         IndexScreen(),
         CameraScreen(),
         ProfileMenu(),
-        ProductDetailPage(data: {},promotion: {},),
+        ProductDetailPage(
+          data: {},
+          promotion: {},
+        ),
         QRScannerPage(),
       ];
     } else {
@@ -75,31 +79,40 @@ class _HomeViewState extends State<HomeView> {
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        elevation: 2,
-        unselectedItemColor: Colors.black,
-        selectedItemColor: Colors.orange,
-        selectedFontSize: 10,
-        unselectedFontSize: 10,
-        onTap: _onItemTapped,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'หน้าแรก',
-            backgroundColor: Colors.blue,
-          ), BottomNavigationBarItem(
-            icon: Icon(Icons.qr_code_scanner),
-            label: 'สแกน',
-            backgroundColor: Colors.blue,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: Colors.grey.shade300, // สีของเส้นขอบด้านบน
+              width: 0.7, // ความหนาของเส้นขอบ
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'ฉัน',
-            backgroundColor: Colors.blue,
-          ),
-        ],
+        ),
+        child: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _selectedIndex,
+          elevation: 0, // ปิดเงาของ BottomNavigationBar
+          unselectedItemColor: Colors.black,
+          selectedItemColor: Colors.orange,
+          backgroundColor: Colors.white, // พื้นหลังสีขาว
+          selectedFontSize: 10,
+          unselectedFontSize: 10,
+          onTap: _onItemTapped,
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'หน้าแรก',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.qr_code_scanner),
+              label: 'สแกน',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person),
+              label: 'ฉัน',
+            ),
+          ],
+        ),
       ),
     );
   }
