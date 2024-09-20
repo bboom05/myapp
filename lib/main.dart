@@ -43,6 +43,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.white, // พื้นหลังของทั้งแอปเป็นสีขาว
         primarySwatch: Colors.orange, // กำหนดสีหลักตามความต้องการ
