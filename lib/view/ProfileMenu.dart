@@ -125,6 +125,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
 
     return Scaffold(
       appBar: AppBar(
+        
         automaticallyImplyLeading: false,
         flexibleSpace: Container(
           decoration: const BoxDecoration(

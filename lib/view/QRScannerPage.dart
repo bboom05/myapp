@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:http/http.dart' as http;
@@ -45,22 +46,30 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
 
           if (Uri.tryParse(qrText)?.hasAbsolutePath ?? false) {
             Uri uri = Uri.parse(qrText);
+            print("URI : ${uri}");
+
             String qrId = uri.queryParameters['qr_id'] ?? '';
 
             if (qrId.isEmpty) {
+              print("QR ID is empty");
               _showPopup(context, 'ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้');
             } else {
               var productDetails = await getQr(qrText);
 
               if (productDetails != null) {
-                var productData = productDetails['data']?.first ?? {};
-                var promotionData = productDetails['promotion'] ?? {};
+                // ส่งข้อมูล product และ premium ไปยัง ProductDetailPage
+                var productData = productDetails['products'] ?? [];
+                var premiumData = productDetails['premium'] ?? [];
+
+                // print("productData ${productData}");
+                // print("premiumData ${premiumData}");
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
                     builder: (context) => ProductDetailPage(
-                        data: Map<String, dynamic>.from(productData),
-                        promotion: Map<String, dynamic>.from(promotionData)),
+                      productData: List<Map<String, dynamic>>.from(productData),
+                      premiumData: List<Map<String, dynamic>>.from(premiumData),
+                    ),
                   ),
                 ).then((_) {
                   setState(() {
@@ -103,9 +112,9 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
         },
         body: jsonMap);
     var rs = json.decode(response.body);
-    print("RS : ${rs}");
+    // print("RS : ${rs}");
     if (rs['status'] == 200 && rs['data'].isNotEmpty) {
-      return rs;
+      return rs['data'];
     }
     return null;
   }
@@ -113,7 +122,11 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
   Future<Map<String, dynamic>?> getQr(String strQr) async {
     Uri uri = Uri.parse(strQr);
     String qrId = uri.queryParameters['qr_id'] ?? '';
-    Map<String, String> map = {"qr_id": qrId, "branch_code": brance_code};
+    Map<String, String> map = {
+      "qr_id": qrId,
+      "branch_code": brance_code,
+      "type": "app"
+    };
     var body = json.encode(map);
     print("BODY MAP : ${body}");
     return await fetchProductDetail(http.Client(), body);
@@ -161,28 +174,18 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   title: const Text('QR Code Scanner', style: TextStyle(color: Colors.white)),
-      //   // backgroundColor: const Color(0xFFFF8C00),
-      //   backgroundColor: Colors.transparent,
-      //   shadowColor: Colors.transparent,
-      //   elevation: 0,
-      //   iconTheme: const IconThemeData(color: Colors.white),
-      // ),
       appBar: AppBar(
         title: const Text('QR Code Scanner',
             style: TextStyle(color: Colors.white)),
-        backgroundColor:
-            Colors.transparent, // ตั้งค่าพื้นหลัง AppBar ให้โปร่งใส
-        elevation: 0, // ลบเงาใต้ AppBar
-        iconTheme: const IconThemeData(
-            color: Colors.white), // ตั้งค่าสีของไอคอนใน AppBar เป็นสีขาว
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Color(0xFFFFA726), // สีส้มอ่อน
-                Color(0xFFFF5722), // สีส้มเข้ม
+                Color(0xFFFFA726),
+                Color(0xFFFF5722),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -196,7 +199,6 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
             key: qrKey,
             controller: controller,
           ),
-          // Focus overlay with rounded corners
           Positioned.fill(
             child: CustomPaint(
               painter: QRScannerOverlayPainter(),
@@ -207,22 +209,6 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
             const Center(
               child: CircularProgressIndicator(),
             ),
-          // Centered text instruction
-          const Positioned(
-            top: 50,
-            left: 0,
-            right: 0,
-            child: Center(
-                // child: Text(
-                //   "Align QR code within the frame",
-                //   style: TextStyle(
-                //     fontSize: 16,
-                //     color: Colors.white,
-                //     fontWeight: FontWeight.bold,
-                //   ),
-                // ),
-                ),
-          ),
         ],
       ),
     );
@@ -275,13 +261,6 @@ class QRScannerOverlayPainter extends CustomPainter {
         Offset(right, bottom), Offset(right - cornerLength, bottom), paint);
     canvas.drawLine(
         Offset(right, bottom), Offset(right, bottom - cornerLength), paint);
-
-    // Draw blur effect for areas outside the scanning frame
-    // final overlayPaint = Paint()..color = Colors.black.withOpacity(0.5);
-    // canvas.drawRect(Rect.fromLTRB(0, 0, size.width, top), overlayPaint);
-    // canvas.drawRect(Rect.fromLTRB(0, bottom, size.width, size.height), overlayPaint);
-    // canvas.drawRect(Rect.fromLTRB(0, top, left, bottom), overlayPaint);
-    // canvas.drawRect(Rect.fromLTRB(right, top, size.width, bottom), overlayPaint);
   }
 
   @override

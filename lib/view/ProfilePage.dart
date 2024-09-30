@@ -41,6 +41,9 @@ class _ProfilePageState extends State<ProfilePage> {
       backgroundColor: const Color(0xFFF0F0F0), // พื้นหลังสีอ่อน
       appBar: AppBar(
         title: const Text('Profile', style: TextStyle(color: Colors.white)),
+        iconTheme: IconThemeData(
+          color: Colors.white, //change your color here
+        ),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(

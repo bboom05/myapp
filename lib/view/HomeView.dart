@@ -30,8 +30,8 @@ class _HomeViewState extends State<HomeView> {
       const CameraScreen(),
       const ProfileMenu(),
       ProductDetailPage(
-        data: {},
-        promotion: {},
+        productData: [],
+        premiumData: [],
       ),
       QRScannerPage(),
     ];
@@ -50,8 +50,8 @@ class _HomeViewState extends State<HomeView> {
         CameraScreen(),
         ProfileMenu(),
         ProductDetailPage(
-          data: {},
-          promotion: {},
+          productData: [],
+          premiumData: [],
         ),
         QRScannerPage(),
       ];

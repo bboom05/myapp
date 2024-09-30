@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:myapp/model/user.dart';
@@ -11,7 +10,6 @@ import 'package:intl/intl.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 import '../system/info.dart';
-import 'showProductDetail.dart';
 
 class IndexScreen extends StatefulWidget {
   const IndexScreen({super.key});
@@ -65,6 +63,7 @@ class _IndexScreenState extends State<IndexScreen>
 
   @override
   void initState() {
+    print("app start");
     _tabController = TabController(length: 2, vsync: this);
     super.initState();
     getUsers().then((_) {
@@ -254,321 +253,7 @@ class _IndexScreenState extends State<IndexScreen>
     });
   }
 
-  Future<Map<String, dynamic>?> _fetchProductType(String productName) async {
-    try {
-      var usernameKey = Info().userAPIProd;
-      var passwordKey = Info().passAPIProd;
-      final encodedCredentials =
-          base64Encode(utf8.encode('$usernameKey:$passwordKey'));
-      final uri =
-          Uri.parse(Info().getProductAndPromotion).replace(queryParameters: {
-        'product_name': productName,
-        'warehouse': brance_code,
-      });
-      final response = await http.get(uri, headers: {
-        'Authorization': 'Basic $encodedCredentials',
-        'Content-Type': 'application/json',
-      });
-      if (response.statusCode == 200) {
-        var dataJson = json.decode(response.body);
-        var product = dataJson['products'][0]; // สมมติว่าคืนค่าผลิตภัณฑ์ตัวแรก
-        var branchDetails =
-            product['branch_details']; // ดึงข้อมูล branch_details จาก product
-        return branchDetails; // คืนค่า branch_details กลับ
-      } else {
-        throw Exception('Failed to load product details');
-      }
-    } catch (error) {
-      print('Error fetching product details: $error');
-      return null; // คืนค่า null ในกรณีเกิดข้อผิดพลาด
-    }
-  }
-
-  void _showProductDetails(Map<String, dynamic> product) async {
-    var data = await _fetchProductType(product['product_name']);
-    var branchDetails = data;
-
-    // สร้างรายการ promotion ที่จะใช้สร้างปุ่ม
-    List<Map<String, dynamic>> availablePromotions = [];
-
-    if (branchDetails != null &&
-        branchDetails['promotions_flash_sale'] != null &&
-        branchDetails['promotions_flash_sale'].isNotEmpty) {
-      availablePromotions.add({
-        'type': 'flash_sale',
-        'text': 'Flash Sale หลัก',
-        'icon': Icons.flash_on,
-        'color': Colors.red,
-      });
-    }
-
-    if (branchDetails != null &&
-        branchDetails['promotions_flash_sale_second'] != null &&
-        branchDetails['promotions_flash_sale_second'].isNotEmpty) {
-      availablePromotions.add({
-        'type': 'flash_sale_secondary',
-        'text': 'Flash Sale รอง',
-        'icon': Icons.flash_auto,
-        'color': Colors.orange,
-      });
-    }
-
-    if (branchDetails != null &&
-        branchDetails['promotions_main'] != null &&
-        branchDetails['promotions_main'].isNotEmpty) {
-      availablePromotions.add({
-        'type': 'general',
-        'text': 'ทั่วไป หลัก',
-        'icon': Icons.store,
-        'color': Colors.green,
-      });
-    }
-
-    if (branchDetails != null &&
-        branchDetails['promotions_second'] != null &&
-        branchDetails['promotions_second'].isNotEmpty) {
-      availablePromotions.add({
-        'type': 'general_secondary',
-        'text': 'ทั่วไป รอง',
-        'icon': Icons.storefront,
-        'color': Colors.blue,
-      });
-    }
-
-    // ถ้าไม่มีโปรโมชั่นใดๆ ให้พาไปยัง ShowProductDetail ในโหมดทั่วไป
-    if (availablePromotions.isEmpty) {
-      _navigateToShowProductDetail(product, 'general');
-      return;
-    }
-
-    // ถ้ามีโปรโมชั่นเพียงปุ่มเดียว ให้พาไปยังหน้านั้นเลย
-    if (availablePromotions.length == 1) {
-      _navigateToShowProductDetail(product, availablePromotions[0]['type']);
-      return;
-    }
-
-    // ถ้ามีมากกว่าหนึ่งโปรโมชั่น ให้แสดง showModalBottomSheet
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return FractionallySizedBox(
-          heightFactor: 0.4,
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Container(
-                width: MediaQuery.of(context).size.width,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(height: 10),
-
-                    // สร้างปุ่มจาก availablePromotions
-                    ...availablePromotions.map((promotion) {
-                      return Column(
-                        children: [
-                          _buildStyledButton(
-                            text: promotion['text'],
-                            icon: promotion['icon'],
-                            iconColor: promotion['color'],
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _navigateToShowProductDetail(
-                                  product, promotion['type']);
-                            },
-                          ),
-                          SizedBox(height: 10),
-                        ],
-                      );
-                    }).toList(),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // void _showProductDetails(Map<String, dynamic> product) async {
-  //   var data = await _fetchProductType(product['product_name']);
-  //   var branchDetails = data;
-
-  //   // ตรวจสอบว่ามี promotion อันใดบ้างใน branchDetails
-  //   bool hasPromotions = branchDetails != null &&
-  //       ((branchDetails['promotions_flash_sale'] != null &&
-  //               branchDetails['promotions_flash_sale'].isNotEmpty) ||
-  //           (branchDetails['promotions_flash_sale_second'] != null &&
-  //               branchDetails['promotions_flash_sale_second'].isNotEmpty) ||
-  //           (branchDetails['promotions_main'] != null &&
-  //               branchDetails['promotions_main'].isNotEmpty) ||
-  //           (branchDetails['promotions_second'] != null &&
-  //               branchDetails['promotions_second'].isNotEmpty));
-
-  //   // ถ้าไม่มีโปรโมชั่นใดๆ เลย ให้พาไปยัง ShowProductDetail ในโหมดทั่วไป
-  //   if (!hasPromotions) {
-  //     _navigateToShowProductDetail(product, 'general');
-  //     return;
-  //   }
-  //   // Continue with your logic
-  //   showModalBottomSheet(
-  //     context: context,
-  //     isScrollControlled: true,
-  //     backgroundColor: Colors.white,
-  //     shape: RoundedRectangleBorder(
-  //       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-  //     ),
-  //     builder: (BuildContext context) {
-  //       return FractionallySizedBox(
-  //         heightFactor: 0.4,
-  //         child: SingleChildScrollView(
-  //           child: Padding(
-  //             padding: const EdgeInsets.all(16.0),
-  //             child: Container(
-  //               width: MediaQuery.of(context).size.width,
-  //               child: Column(
-  //                 mainAxisSize: MainAxisSize.min,
-  //                 children: [
-  //                   SizedBox(height: 10),
-
-  //                   // Flash Sale หลัก
-  //                   if (branchDetails != null &&
-  //                       branchDetails['promotions_flash_sale'] != null &&
-  //                       branchDetails['promotions_flash_sale'].isNotEmpty)
-  //                     _buildStyledButton(
-  //                       text: 'Flash Sale หลัก',
-  //                       icon: Icons.flash_on,
-  //                       iconColor: Colors.red,
-  //                       onPressed: () {
-  //                         Navigator.pop(context);
-  //                         _navigateToShowProductDetail(product, 'flash_sale');
-  //                       },
-  //                     ),
-
-  //                   SizedBox(height: 10),
-
-  //                   // Flash Sale รอง
-  //                   if (branchDetails != null &&
-  //                       branchDetails['promotions_flash_sale_second'] != null &&
-  //                       branchDetails['promotions_flash_sale_second']
-  //                           .isNotEmpty)
-  //                     _buildStyledButton(
-  //                       text: 'Flash Sale รอง',
-  //                       icon: Icons.flash_auto,
-  //                       iconColor: Colors.orange,
-  //                       onPressed: () {
-  //                         Navigator.pop(context);
-  //                         _navigateToShowProductDetail(
-  //                             product, 'flash_sale_secondary');
-  //                       },
-  //                     ),
-
-  //                   SizedBox(height: 10),
-
-  //                   // ทั่วไป หลัก
-  //                   if (branchDetails != null &&
-  //                       branchDetails['promotions_main'] != null &&
-  //                       branchDetails['promotions_main'].isNotEmpty)
-  //                     _buildStyledButton(
-  //                       text: 'ทั่วไป หลัก',
-  //                       icon: Icons.store,
-  //                       iconColor: Colors.green,
-  //                       onPressed: () {
-  //                         Navigator.pop(context);
-  //                         _navigateToShowProductDetail(product, 'general');
-  //                       },
-  //                     ),
-
-  //                   SizedBox(height: 10),
-
-  //                   // ทั่วไป รอง
-  //                   if (branchDetails != null &&
-  //                       branchDetails['promotions_second'] != null &&
-  //                       branchDetails['promotions_second'].isNotEmpty)
-  //                     _buildStyledButton(
-  //                       text: 'ทั่วไป รอง',
-  //                       icon: Icons.storefront,
-  //                       iconColor: Colors.blue,
-  //                       onPressed: () {
-  //                         Navigator.pop(context);
-  //                         _navigateToShowProductDetail(
-  //                             product, 'general_secondary');
-  //                       },
-  //                     ),
-  //                 ],
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
-
-// ต้องการให้ส่ง premiumData ไปด้วย
-  void _navigateToShowProductDetail(
-      Map<String, dynamic> product, String selectedType) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ShowProductDetail(
-          product: product, // เปลี่ยนจาก product_name เป็น product
-          selectedType: selectedType,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStyledButton({
-    required String text,
-    required IconData icon,
-    required Color iconColor, // เพิ่ม parameter เพื่อรับสีไอคอน
-    required VoidCallback onPressed,
-  }) {
-    return SizedBox(
-      width: MediaQuery.of(context).size.width * 0.9, // กำหนดความกว้างเป็น 90%
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          backgroundColor: Colors.white, // พื้นหลังสีขาว
-          elevation: 0, // ไม่มีเงา
-          side: BorderSide(color: Colors.grey.shade400), // ขอบปุ่มเป็นสีเทาอ่อน
-        ),
-        child: Row(
-          mainAxisAlignment:
-              MainAxisAlignment.center, // จัดไอคอนและข้อความให้อยู่ตรงกลาง
-          children: [
-            Icon(
-              icon,
-              color: iconColor, // ใช้สีไอคอนที่ส่งมา
-            ),
-            SizedBox(width: 10), // เว้นระยะระหว่างไอคอนกับข้อความ
-            Text(
-              text,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Kanit',
-                color: Colors.black, // สีข้อความเป็นสีดำเพื่อความคมชัด
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showProductDetailsOLD(String productName) async {
+  Future<void> _showProductDetails(String productName) async {
     final formatter = NumberFormat('#,##0.00');
 
     await _logActivity(
@@ -1580,16 +1265,15 @@ class _IndexScreenState extends State<IndexScreen>
                                       return Icon(Icons.broken_image, size: 30);
                                     },
                                   ),
-                                  SizedBox(
-                                    height: 5,
-                                  ),
+                                  SizedBox(height: 5,),
                                   // เพิ่มชื่อธนาคารใต้ icon
                                   Text(
                                     bank['image']['fullname'] ?? '',
                                     style: TextStyle(
-                                        color: Colors.black,
-                                        fontFamily: 'Kanit',
-                                        fontSize: 10),
+                                      color: Colors.black,
+                                      fontFamily: 'Kanit',
+                                      fontSize: 10
+                                    ),
                                     textAlign: TextAlign.center,
                                   ),
                                 ],
@@ -1684,6 +1368,114 @@ class _IndexScreenState extends State<IndexScreen>
                   ),
               ],
             );
+
+            // return Column(
+            //   children: [
+            //     Padding(
+            //       padding: const EdgeInsets.symmetric(vertical: 8.0),
+            //       child: Row(
+            //         children: [
+            //           Expanded(
+            //             flex: 1,
+            //             child: Align(
+            //               alignment: Alignment.center,
+            //               child: Image.network(
+            //                 'https://arnold.tg.co.th:3001${bank['image']['image']}',
+            //                 height: 30,
+            //                 fit: BoxFit.contain,
+            //                 alignment: Alignment.centerLeft,
+            //                 errorBuilder: (context, error, stackTrace) {
+            //                   return Icon(Icons.broken_image, size: 30);
+            //                 },
+            //               ),
+            //             ),
+            //           ),
+            //           Expanded(
+            //             flex: 1,
+            //             child: Center(
+            //               child: Text(
+            //                 code,
+            //                 style: TextStyle(
+            //                   color: Colors.black,
+            //                   fontFamily: 'Kanit',
+            //                 ),
+            //                 textAlign: TextAlign.center,
+            //               ),
+            //             ),
+            //           ),
+            //           Expanded(
+            //             flex: 1,
+            //             child: Center(
+            //               child: Text(
+            //                 bank['plans'][0]['months'] ?? '-',
+            //                 style: TextStyle(
+            //                   color: Colors.black,
+            //                   fontFamily: 'Kanit',
+            //                 ),
+            //                 textAlign: TextAlign.center,
+            //               ),
+            //             ),
+            //           ),
+            //           Expanded(
+            //             flex: 1,
+            //             child: Center(
+            //               child: Text(
+            //                 bank['plans'][0]['ppm'] != null
+            //                     ? '${formatter.format(double.tryParse(bank['plans'][0]['ppm']) ?? 0)}'
+            //                     : '-',
+            //                 style: TextStyle(
+            //                   color: Colors.black,
+            //                   fontFamily: 'Kanit',
+            //                 ),
+            //                 textAlign: TextAlign.center,
+            //               ),
+            //             ),
+            //           ),
+            //         ],
+            //       ),
+            //     ),
+            //     for (var i = 1; i < bank['plans'].length; i++)
+            //       Padding(
+            //         padding: const EdgeInsets.symmetric(vertical: 8.0),
+            //         child: Row(
+            //           children: [
+            //             Expanded(
+            //                 flex: 1, child: SizedBox.shrink()), // Placeholder
+            //             Expanded(
+            //                 flex: 1, child: SizedBox.shrink()), // Placeholder
+            //             Expanded(
+            //               flex: 1,
+            //               child: Center(
+            //                 child: Text(
+            //                   bank['plans'][i]['months'] ?? '-',
+            //                   style: TextStyle(
+            //                     color: Colors.black,
+            //                     fontFamily: 'Kanit',
+            //                   ),
+            //                   textAlign: TextAlign.center,
+            //                 ),
+            //               ),
+            //             ),
+            //             Expanded(
+            //               flex: 1,
+            //               child: Center(
+            //                 child: Text(
+            //                   bank['plans'][i]['ppm'] != null
+            //                       ? '${formatter.format(double.tryParse(bank['plans'][i]['ppm']) ?? 0)}'
+            //                       : '-',
+            //                   style: TextStyle(
+            //                     color: Colors.black,
+            //                     fontFamily: 'Kanit',
+            //                   ),
+            //                   textAlign: TextAlign.center,
+            //                 ),
+            //               ),
+            //             ),
+            //           ],
+            //         ),
+            //       ),
+            //   ],
+            // );
           }).toList(),
         ),
       );
@@ -2424,7 +2216,8 @@ class _IndexScreenState extends State<IndexScreen>
                                 itemBuilder: (context, index) {
                                   var product = _productData[index];
                                   return GestureDetector(
-                                    onTap: () => _showProductDetails(product),
+                                    onTap: () => _showProductDetails(
+                                        product['product_name']),
                                     child: Card(
                                       color: Colors.white,
                                       elevation: 1,
