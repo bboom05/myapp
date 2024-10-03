@@ -92,7 +92,7 @@ class _LoginViewState extends State<LoginView> {
         } else {
           setState(() {
             errorText =
-                "รหัสพนักงานหรือรหัสผ่านไม่ถูกต้อง กรุณาลลองใหม่อีกครั้ง";
+                "รหัสพนักงานหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง";
           });
         }
       } else {

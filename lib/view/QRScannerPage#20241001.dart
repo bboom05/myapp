@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:http/http.dart' as http;
@@ -25,8 +26,8 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
   var user = User();
   bool isLogin = false;
   var fullname = "";
-  var branch_code = "";
-  var branch_name = "";
+  var brance_code = "";
+  var brance_name = "";
 
   @override
   void initState() {
@@ -45,6 +46,8 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
 
           if (Uri.tryParse(qrText)?.hasAbsolutePath ?? false) {
             Uri uri = Uri.parse(qrText);
+            print("URI : ${uri}");
+
             String qrId = uri.queryParameters['qr_id'] ?? '';
 
             if (qrId.isEmpty) {
@@ -54,9 +57,26 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
               var productDetails = await getQr(qrText);
 
               if (productDetails != null) {
-                // เมื่อได้รับข้อมูลแล้ว แสดงรายการให้เลือก
-                _navigateToPromotionSelectionPage(
-                    productDetails['products'], productDetails['premium']);
+                // ส่งข้อมูล product และ premium ไปยัง ProductDetailPage
+                var productData = productDetails['products'] ?? [];
+                var premiumData = productDetails['premium'] ?? [];
+
+                // print("productData ${productData}");
+                // print("premiumData ${premiumData}");
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProductDetailPage(
+                      productData: List<Map<String, dynamic>>.from(productData),
+                      premiumData: List<Map<String, dynamic>>.from(premiumData),
+                    ),
+                  ),
+                ).then((_) {
+                  setState(() {
+                    isProcessing = false;
+                    showLoading = false;
+                  });
+                });
               } else {
                 _showPopup(context, 'ไม่พบข้อมูลสินค้าสำหรับ QR Code นี้');
               }
@@ -74,8 +94,8 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
     setState(() {
       isLogin = user.isLogin;
       fullname = user.fullname;
-      branch_code = user.brance_code;
-      branch_name = user.brance_name;
+      brance_code = user.brance_code;
+      brance_name = user.brance_name;
     });
   }
 
@@ -92,6 +112,7 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
         },
         body: jsonMap);
     var rs = json.decode(response.body);
+    // print("RS : ${rs}");
     if (rs['status'] == 200 && rs['data'].isNotEmpty) {
       return rs['data'];
     }
@@ -103,30 +124,12 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
     String qrId = uri.queryParameters['qr_id'] ?? '';
     Map<String, String> map = {
       "qr_id": qrId,
-      "branch_code": branch_code,
+      "branch_code": brance_code,
       "type": "app"
     };
     var body = json.encode(map);
+    print("BODY MAP : ${body}");
     return await fetchProductDetail(http.Client(), body);
-  }
-
-  // Navigate to Promotion Selection Page
-  void _navigateToPromotionSelectionPage(
-      List<dynamic> products, List<dynamic> premiumData) {
-    if (products.isEmpty) {
-      _showPopup(context, 'No products available');
-      return;
-    }
-
-    var product = products[0]; // Just picking the first product for now.
-
-    Navigator.pushReplacement(
-      context, // Use pushReplacement to remove QRScannerPage from the stack
-      MaterialPageRoute(
-        builder: (context) =>
-            PromotionSelectionPage(product: product, premium: premiumData),
-      ),
-    );
   }
 
   void _showPopup(BuildContext context, String message) {
@@ -156,6 +159,16 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
         );
       },
     );
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    if (Platform.isAndroid) {
+      controller.stop();
+    } else if (Platform.isIOS) {
+      controller.start();
+    }
   }
 
   @override
@@ -205,167 +218,6 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
   void dispose() {
     controller.dispose();
     super.dispose();
-  }
-}
-
-// New Page for Promotion Selection with minimalist design
-class PromotionSelectionPage extends StatelessWidget {
-  final Map<String, dynamic> product;
-  final List<dynamic> premium;
-
-  const PromotionSelectionPage(
-      {required this.product, required this.premium, Key? key})
-      : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    var branchDetails = product['branch_details'];
-    List<Map<String, dynamic>> availablePromotions = [];
-    // print('product: $product');
-    print('premium: ${premium}');
-    if (branchDetails != null &&
-        branchDetails['promotions_flash_sale'] != null &&
-        branchDetails['promotions_flash_sale'].isNotEmpty) {
-      availablePromotions.add({
-        'type': 'flash_sale',
-        'text': 'Flash Sale หลัก',
-        'icon': Icons.flash_on,
-        'color': Colors.red,
-      });
-    }
-
-    if (branchDetails != null &&
-        branchDetails['promotions_flash_sale_second'] != null &&
-        branchDetails['promotions_flash_sale_second'].isNotEmpty) {
-      availablePromotions.add({
-        'type': 'flash_sale_secondary',
-        'text': 'Flash Sale รอง',
-        'icon': Icons.flash_auto,
-        'color': Colors.orange,
-      });
-    }
-
-    if (branchDetails != null &&
-        branchDetails['promotions_main'] != null &&
-        branchDetails['promotions_main'].isNotEmpty) {
-      availablePromotions.add({
-        'type': 'general',
-        'text': 'ทั่วไป หลัก',
-        'icon': Icons.store,
-        'color': Colors.green,
-      });
-    }
-
-    if (branchDetails != null &&
-        branchDetails['promotions_second'] != null &&
-        branchDetails['promotions_second'].isNotEmpty) {
-      availablePromotions.add({
-        'type': 'general_secondary',
-        'text': 'ทั่วไป รอง',
-        'icon': Icons.storefront,
-        'color': Colors.blue,
-      });
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        // automaticallyImplyLeading: false,
-        iconTheme: IconThemeData(
-          color: Colors.white, //change your color here
-        ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color(0xFFFFA726), // สีส้มอ่อน
-                Color(0xFFFF5722), // สีส้มเข้ม
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-        elevation: 0,
-        title: const Text(
-          'เลือกโปรโมชั่น',
-          style: TextStyle(
-            fontFamily: 'Kanit',
-            color: Colors.white,
-            fontWeight: FontWeight.w300, // ใช้ตัวอักษรแบบบาง
-          ),
-        ),
-        backgroundColor: Colors.white,
-        // leading: IconButton(
-        //   icon: const Icon(Icons.arrow_back),
-        //   onPressed: () {
-        //     // กลับไปยังหน้าก่อนหน้า (QRScannerPage)
-        //     Navigator.pop(context);
-        //   },
-        // ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 16.0,
-            crossAxisSpacing: 16.0,
-          ),
-          itemCount: availablePromotions.length,
-          itemBuilder: (context, index) {
-            var promotion = availablePromotions[index];
-            // print('promotion: $promotion');
-            print('product: $product');
-            // print('premium: $premium');
-            // var data_premium =
-            //     List<Map<String, dynamic>>.from(product['premium']);
-            // print('data_premium: $data_premium');
-            // print('branchDetails: ${data_premium}');
-            return GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ProductDetailPage(
-                      productData: [product],
-                      premiumData: List<Map<String, dynamic>>.from(premium),
-                      selectedType: promotion['type'],
-                    ),
-                  ),
-                );
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      promotion['icon'],
-                      color: promotion['color'],
-                      size: 48,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      promotion['text'],
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
   }
 }
 

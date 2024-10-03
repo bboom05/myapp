@@ -32,6 +32,7 @@ class _HomeViewState extends State<HomeView> {
       ProductDetailPage(
         productData: [],
         premiumData: [],
+        selectedType: '',
       ),
       QRScannerPage(),
     ];
@@ -52,6 +53,7 @@ class _HomeViewState extends State<HomeView> {
         ProductDetailPage(
           productData: [],
           premiumData: [],
+          selectedType: '',
         ),
         QRScannerPage(),
       ];

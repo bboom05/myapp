@@ -53,6 +53,257 @@ class _ShowProductDetailState extends State<ShowProductDetail>
     });
   }
 
+
+
+  List<Widget> _buildBlockData(Map<String, dynamic> product,
+      List<dynamic> premium, String selectedType) {
+    List<dynamic>? promotion = [];
+    Map<String, dynamic>? installment = {};
+    final formatter = NumberFormat('#,##0.00');
+    final data = product['branch_details'];
+    // ตรวจสอบ selectedType และดึงข้อมูล promotion ตามประเภทที่เลือก
+    if (selectedType == 'flash_sale') {
+      promotion = data['promotions_flash_sale'];
+      installment = data['installment_plans_Flash_Sale'];
+    } else if (selectedType == 'flash_sale_secondary') {
+      promotion = data['promotions_flash_sale_second'];
+      installment = data['installment_plans_Flash_Sale_Second'];
+    } else if (selectedType == 'general_secondary') {
+      promotion = data['promotions_second'];
+      installment = data['installment_plans_second'];
+    } else {
+      promotion = data['promotions_main'];
+      installment = data['installment_plans_main'];
+    }
+    return [
+      Text(
+        product['product_name'] ?? '',
+        style: TextStyle(
+            fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Kanit'),
+      ),
+      SizedBox(height: 8),
+      Text.rich(
+        TextSpan(
+          children: [
+            if (promotion != null && promotion.isNotEmpty) ...[
+              TextSpan(
+                children: () {
+                  double rrp = double.tryParse(
+                          promotion![0]['price_rrp'].replaceAll(',', '')) ??
+                      0;
+                  double netSellingPrice = double.tryParse(promotion[0]
+                              ['netselling_price']
+                          .replaceAll(',', '')) ??
+                      0;
+
+                  print('price_rrp: ${promotion[0]['price_rrp']}');
+                  print(
+                      'netselling_price: ${promotion[0]['netselling_price']}');
+
+                  if (rrp != netSellingPrice) {
+                    return [
+                      if (rrp != 0.00)
+                        TextSpan(
+                          text: '฿${formatter.format(rrp)}',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontFamily: 'Kanit',
+                            color: Colors.grey,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                      if (netSellingPrice != 0.00)
+                        TextSpan(
+                          text: ' ฿${formatter.format(netSellingPrice)}',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontFamily: 'Kanit',
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      if (rrp > netSellingPrice)
+                        TextSpan(
+                          text:
+                              ' -${_calculateDiscountPercentage(rrp, netSellingPrice)}%',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Kanit',
+                            color: Colors.red,
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                    ];
+                  } else {
+                    return [
+                      if (netSellingPrice != 0.00)
+                        TextSpan(
+                          text: ' ฿${formatter.format(netSellingPrice)}',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontFamily: 'Kanit',
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                    ];
+                  }
+                }(),
+              ),
+            ] else ...[
+              if (product['price'] != null && product['price'] != '0.00')
+                TextSpan(
+                  text:
+                      ' ฿${formatter.format(double.tryParse(product['price'].replaceAll(',', '')) ?? 0)}',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontFamily: 'Kanit',
+                    color: Colors.orange,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+      SizedBox(height: 16),
+      _buildVariantsSection(product),
+      SizedBox(height: 16),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.security, color: Colors.orange),
+              SizedBox(width: 8),
+              Text(
+                'การรับประกัน',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Kanit',
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          _buildProductWarrantyAndProtection(promotion),
+          SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(Icons.credit_card, color: Colors.orange),
+              SizedBox(width: 8),
+              Text(
+                'โปรโมชั่นบัตรเครดิต:',
+                style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          installment != null && installment.isNotEmpty
+              ? _buildPromotionList(installment)
+              : Center(
+                  child: Text(
+                    '-',
+                    style: TextStyle(
+                      fontFamily: 'Kanit',
+                      fontSize: 16,
+                      // color: Colors.grey,
+                    ),
+                  ),
+                ),
+        ],
+      ),
+      const SizedBox(height: 16),
+      // รายการของแถม
+      Row(
+        children: [
+          Icon(Icons.card_giftcard, color: Colors.orange),
+          SizedBox(width: 8),
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: 'รายการของแถม: ',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Kanit',
+                  ),
+                ),
+                TextSpan(
+                  text: '(เลือกได้กลุ่มละ 1 อย่าง)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Kanit',
+                  ),
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
+      SizedBox(height: 8),
+      _buildOptionSetList(promotion),
+      const SizedBox(height: 16),
+
+      // กลุ่มรายการของแถม
+      Row(
+        children: [
+          Icon(Icons.format_list_bulleted, color: Colors.orange),
+          SizedBox(width: 8),
+          Text(
+            'กลุ่มรายการของแถม:',
+            style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
+          ),
+        ],
+      ),
+      SizedBox(height: 8),
+      _buildPremiumTabBar(),
+      const SizedBox(height: 16),
+
+      // Note:
+      Row(
+        children: [
+          Icon(Icons.event_note, color: Colors.orange),
+          SizedBox(width: 8),
+          Text(
+            'Note:',
+            style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
+          ),
+        ],
+      ),
+      SizedBox(height: 8),
+      _buildNoteData(promotion),
+      const SizedBox(height: 16),
+      // ของแถมเพิ่ม TG:
+      Row(
+        children: [
+          Icon(Icons.event_note, color: Colors.orange),
+          SizedBox(width: 8),
+          Text(
+            'ของแถมเพิ่ม TG:',
+            style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
+          ),
+        ],
+      ),
+      SizedBox(height: 8),
+      _buildNoteTG(promotion),
+      const SizedBox(height: 16),
+      // ของแถมแบรนด์ทุกช่องทาง:
+      Row(
+        children: [
+          Icon(Icons.event_note, color: Colors.orange),
+          SizedBox(width: 8),
+          Text(
+            'ของแถมแบรนด์ทุกช่องทาง:',
+            style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
+          ),
+        ],
+      ),
+      SizedBox(height: 8),
+      _buildNoteGiftBrand(promotion),
+    ];
+  }
+
   Widget _buildVariantsSection(Map<String, dynamic> product) {
     if (product['variants'] == null || product['variants'] is! List) {
       return Text('ไม่มีตัวเลือกสินค้า', style: TextStyle(fontFamily: 'Kanit'));
@@ -886,255 +1137,6 @@ class _ShowProductDetailState extends State<ShowProductDetail>
         ),
       ),
     );
-  }
-
-  List<Widget> _buildBlockData(Map<String, dynamic> product,
-      List<dynamic> premium, String selectedType) {
-    List<dynamic>? promotion = [];
-    Map<String, dynamic>? installment = {};
-    final formatter = NumberFormat('#,##0.00');
-    final data = product['branch_details'];
-    // ตรวจสอบ selectedType และดึงข้อมูล promotion ตามประเภทที่เลือก
-    if (selectedType == 'flash_sale') {
-      promotion = data['promotions_flash_sale'];
-      installment = data['installment_plans_Flash_Sale'];
-    } else if (selectedType == 'flash_sale_secondary') {
-      promotion = data['promotions_flash_sale_second'];
-      installment = data['installment_plans_Flash_Sale_Second'];
-    } else if (selectedType == 'general_secondary') {
-      promotion = data['promotions_second'];
-      installment = data['installment_plans_second'];
-    } else {
-      promotion = data['promotions_main'];
-      installment = data['installment_plans_main'];
-    }
-    return [
-      Text(
-        product['product_name'] ?? '',
-        style: TextStyle(
-            fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Kanit'),
-      ),
-      SizedBox(height: 8),
-      Text.rich(
-        TextSpan(
-          children: [
-            if (promotion != null && promotion.isNotEmpty) ...[
-              TextSpan(
-                children: () {
-                  double rrp = double.tryParse(
-                          promotion![0]['price_rrp'].replaceAll(',', '')) ??
-                      0;
-                  double netSellingPrice = double.tryParse(promotion[0]
-                              ['netselling_price']
-                          .replaceAll(',', '')) ??
-                      0;
-
-                  print('price_rrp: ${promotion[0]['price_rrp']}');
-                  print(
-                      'netselling_price: ${promotion[0]['netselling_price']}');
-
-                  if (rrp != netSellingPrice) {
-                    return [
-                      if (rrp != 0.00)
-                        TextSpan(
-                          text: '฿${formatter.format(rrp)}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontFamily: 'Kanit',
-                            color: Colors.grey,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
-                      if (netSellingPrice != 0.00)
-                        TextSpan(
-                          text: ' ฿${formatter.format(netSellingPrice)}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontFamily: 'Kanit',
-                            color: Colors.orange,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      if (rrp > netSellingPrice)
-                        TextSpan(
-                          text:
-                              ' -${_calculateDiscountPercentage(rrp, netSellingPrice)}%',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Kanit',
-                            color: Colors.red,
-                            fontWeight: FontWeight.normal,
-                          ),
-                        ),
-                    ];
-                  } else {
-                    return [
-                      if (netSellingPrice != 0.00)
-                        TextSpan(
-                          text: ' ฿${formatter.format(netSellingPrice)}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontFamily: 'Kanit',
-                            color: Colors.orange,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                    ];
-                  }
-                }(),
-              ),
-            ] else ...[
-              if (product['price'] != null && product['price'] != '0.00')
-                TextSpan(
-                  text:
-                      ' ฿${formatter.format(double.tryParse(product['price'].replaceAll(',', '')) ?? 0)}',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontFamily: 'Kanit',
-                    color: Colors.orange,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-            ],
-          ],
-        ),
-      ),
-      SizedBox(height: 16),
-      _buildVariantsSection(product),
-      SizedBox(height: 16),
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.security, color: Colors.orange),
-              SizedBox(width: 8),
-              Text(
-                'การรับประกัน',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Kanit',
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
-          _buildProductWarrantyAndProtection(promotion),
-          SizedBox(height: 16),
-          Row(
-            children: [
-              Icon(Icons.credit_card, color: Colors.orange),
-              SizedBox(width: 8),
-              Text(
-                'โปรโมชั่นบัตรเครดิต:',
-                style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
-          installment != null && installment.isNotEmpty
-              ? _buildPromotionList(installment)
-              : Center(
-                  child: Text(
-                    '-',
-                    style: TextStyle(
-                      fontFamily: 'Kanit',
-                      fontSize: 16,
-                      // color: Colors.grey,
-                    ),
-                  ),
-                ),
-        ],
-      ),
-      const SizedBox(height: 16),
-      // รายการของแถม
-      Row(
-        children: [
-          Icon(Icons.card_giftcard, color: Colors.orange),
-          SizedBox(width: 8),
-          Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: 'รายการของแถม: ',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Kanit',
-                  ),
-                ),
-                TextSpan(
-                  text: '(เลือกได้กลุ่มละ 1 อย่าง)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'Kanit',
-                  ),
-                ),
-              ],
-            ),
-          )
-        ],
-      ),
-      SizedBox(height: 8),
-      _buildOptionSetList(promotion),
-      const SizedBox(height: 16),
-
-      // กลุ่มรายการของแถม
-      Row(
-        children: [
-          Icon(Icons.format_list_bulleted, color: Colors.orange),
-          SizedBox(width: 8),
-          Text(
-            'กลุ่มรายการของแถม:',
-            style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
-          ),
-        ],
-      ),
-      SizedBox(height: 8),
-      _buildPremiumTabBar(),
-      const SizedBox(height: 16),
-
-      // Note:
-      Row(
-        children: [
-          Icon(Icons.event_note, color: Colors.orange),
-          SizedBox(width: 8),
-          Text(
-            'Note:',
-            style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
-          ),
-        ],
-      ),
-      SizedBox(height: 8),
-      _buildNoteData(promotion),
-      const SizedBox(height: 16),
-      // ของแถมเพิ่ม TG:
-      Row(
-        children: [
-          Icon(Icons.event_note, color: Colors.orange),
-          SizedBox(width: 8),
-          Text(
-            'ของแถมเพิ่ม TG:',
-            style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
-          ),
-        ],
-      ),
-      SizedBox(height: 8),
-      _buildNoteTG(promotion),
-      const SizedBox(height: 16),
-      // ของแถมแบรนด์ทุกช่องทาง:
-      Row(
-        children: [
-          Icon(Icons.event_note, color: Colors.orange),
-          SizedBox(width: 8),
-          Text(
-            'ของแถมแบรนด์ทุกช่องทาง:',
-            style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
-          ),
-        ],
-      ),
-      SizedBox(height: 8),
-      _buildNoteGiftBrand(promotion),
-    ];
   }
 
   Widget _buildOptionSetList(List<dynamic>? promotions) {
