@@ -63,8 +63,8 @@ android {
         applicationId "com.superappsbytg"
         minSdkVersion 24
         targetSdkVersion 34
-        // versionCode flutterVersionCode.toInteger()
-        versionCode 5
+        versionCode flutterVersionCode.toInteger()
+        // versionCode 5
         versionName flutterVersionName
         multiDexEnabled true
     }

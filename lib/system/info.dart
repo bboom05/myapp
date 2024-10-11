@@ -1,9 +1,10 @@
 const String _baseUrl = "https://app01.tgfone.com/";
 const String _baseUrlApi = "https://app01.tgfone.com/api-Flutter/";
 const String _baseUrlApiQR = "https://app01.tgfone.com/qrcode/";
-const String _baseUrlSecondApi = "http://203.154.201.78:3001/api-Flutter/";
+const String _baseUrlLogApi = "https://app01.tgfone.com/api-Flutterv2/";
 
-const String _baseUrlProd = "https://arnold.tg.co.th:3001/api-Flutterv2/";
+const String _baseUrlProd = "https://arnold.tg.co.th:3001/api-Flutterv2/"; // Production
+const String _baseUrlUAT = "https://arnold.tg.co.th:3002/api-Flutterv2/"; // UAT
 const String _domain = "app01.tgfone.com";
 
 class Info {
@@ -19,15 +20,11 @@ class Info {
 
   String userLogin = '${_baseUrlApi}datauser/index.php';
   String getBranchData = '${_baseUrlApi}datauser/index.php';
-  // String getProduct = '${_baseUrlApi}datauser/getProduct.php'; // ดึงข้อมูลสินค้าที่มาจากการสแกนจาก API 
   String getProduct = '${_baseUrlApiQR}qr_redirect'; // ดึงข้อมูลสินค้าที่มาจากการสแกนจาก API 
-  // String searchProduct = '${_baseUrlApi}datauser/searchProduct.php'; // ดึงข้อมูลสินค้า
-  String allProduct = '${_baseUrlProd}dataproducts'; // ดึงข้อมูลสินค้า
-  String getProductAndPromotion = '${_baseUrlProd}data'; // ดึงข้อมูลสินค้า
-
-  String getGroupBrand = '${_baseUrlApi}datauser/groupBrandTags.php'; // ดึงข้อมูล Brand
-  String getProductExpress = '${_baseUrlSecondApi}data'; // ดึงข้อมูลสินค้าที่มาจากการสแกนจาก API 
-  String getPremiumData = '${_baseUrlApi}datauser/getPremiumData.php';
+  String allProduct = '${_baseUrlProd}dataproducts'; // ดึงข้อมูลสินค้าทั้งหมด หน้าแรกแอป
+  // String getProductAndPromotion = '${_baseUrlProd}data'; // ดึงข้อมูลสินค้า และโปรโมชั่น
+  String getProductAndPromotion = '${_baseUrlUAT}datauat'; // ดึงข้อมูลสินค้า และโปรโมชั่น
+  String logActivity = '${_baseUrlLogApi}php_log/save_log.php'; // บันทึก Log การใช้งาน 
     
 
   Info() : super();

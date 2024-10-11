@@ -203,6 +203,29 @@ class _IndexScreenState extends State<IndexScreen>
       'Content-Type': 'application/json',
     });
 
+    // if (response.statusCode == 200) {
+    //   var rs = json.decode(response.body);
+    //   if (rs is List && rs.isNotEmpty) {
+    //     setState(() {
+    //       _allProductData = List<Map<String, dynamic>>.from(rs);
+    //       _productData = _allProductData;
+    //       _generateTags();
+    //       isLoading = false;
+    //     });
+    //   } else if (rs is Map && rs.containsKey('data')) {
+    //     setState(() {
+    //       _allProductData = List<Map<String, dynamic>>.from(rs['data']);
+    //       _productData = _allProductData;
+    //       _generateTags();
+    //       isLoading = false;
+    //     });
+    //   }
+    // } else {
+    //   setState(() {
+    //     isLoading = false;
+    //   });
+    // }
+
     if (response.statusCode == 200) {
       var rs = json.decode(response.body);
       if (rs is List && rs.isNotEmpty) {
@@ -210,21 +233,35 @@ class _IndexScreenState extends State<IndexScreen>
           _allProductData = List<Map<String, dynamic>>.from(rs);
           _productData = _allProductData;
           _generateTags();
-          isLoading = false;
+          isLoading = false; // เมื่อมีข้อมูลให้หยุดการโหลด
         });
       } else if (rs is Map && rs.containsKey('data')) {
         setState(() {
           _allProductData = List<Map<String, dynamic>>.from(rs['data']);
           _productData = _allProductData;
           _generateTags();
-          isLoading = false;
+          isLoading = false; // เมื่อมีข้อมูลให้หยุดการโหลด
+        });
+      } else {
+        setState(() {
+          _productData = []; // กรณีไม่มีข้อมูลใน rs
+          isLoading = false; // หยุดการโหลดเมื่อไม่มีข้อมูล
         });
       }
     } else {
       setState(() {
-        isLoading = false;
+        _productData = []; // กรณีมีปัญหาใน response
+        isLoading = false; // หยุดการโหลดในกรณีที่มีข้อผิดพลาด
       });
     }
+
+    // print("response ${response.body}");
+    // print("response ${response.statusCode}");
+    // print("response ${response.reasonPhrase}");
+    // print("response ${response.headers}");
+    // print("response ${response.request}");
+    print("_productData ${_productData}");
+    print("isLoading ${isLoading}");
   }
 
   void _generateTags() {
@@ -296,7 +333,7 @@ class _IndexScreenState extends State<IndexScreen>
         branchDetails['promotions_flash_sale'].isNotEmpty) {
       availablePromotions.add({
         'type': 'flash_sale',
-        'text': 'Flash Sale หลัก',
+        'text': 'Flash Sale',
         'icon': Icons.flash_on,
         'color': Colors.red,
       });
@@ -318,7 +355,7 @@ class _IndexScreenState extends State<IndexScreen>
         branchDetails['promotions_main'].isNotEmpty) {
       availablePromotions.add({
         'type': 'general',
-        'text': 'ทั่วไป หลัก',
+        'text': 'ทั่วไป',
         'icon': Icons.store,
         'color': Colors.green,
       });
@@ -338,12 +375,14 @@ class _IndexScreenState extends State<IndexScreen>
     // ถ้าไม่มีโปรโมชั่นใดๆ ให้พาไปยัง ShowProductDetail ในโหมดทั่วไป
     if (availablePromotions.isEmpty) {
       _navigateToShowProductDetail(product, 'general');
+
       return;
     }
 
     // ถ้ามีโปรโมชั่นเพียงปุ่มเดียว ให้พาไปยังหน้านั้นเลย
     if (availablePromotions.length == 1) {
       _navigateToShowProductDetail(product, availablePromotions[0]['type']);
+
       return;
     }
 
@@ -398,7 +437,17 @@ class _IndexScreenState extends State<IndexScreen>
 
 // ต้องการให้ส่ง premiumData ไปด้วย
   void _navigateToShowProductDetail(
-      Map<String, dynamic> product, String selectedType) {
+      Map<String, dynamic> product, String selectedType) async {
+    await _logActivity(
+      employeeCode: user.employee_code,
+      branchCode: user.brance_code,
+      model: product['product_name'],
+      activityType: 'click_product',
+      detailSearch: searchBranch.text,
+      tagsBrand:
+          tags.where((tag) => tag.isSelected).map((tag) => tag.name).join(','),
+      promotionType: selectedType,
+    );
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -456,15 +505,15 @@ class _IndexScreenState extends State<IndexScreen>
   Future<void> _showProductDetailsOLD(String productName) async {
     final formatter = NumberFormat('#,##0.00');
 
-    await _logActivity(
-      employeeCode: user.employee_code,
-      branchCode: user.brance_code,
-      model: productName,
-      activityType: 'click_product',
-      detailSearch: searchBranch.text,
-      tagsBrand:
-          tags.where((tag) => tag.isSelected).map((tag) => tag.name).join(','),
-    );
+    // await _logActivity(
+    //   employeeCode: user.employee_code,
+    //   branchCode: user.brance_code,
+    //   model: productName,
+    //   activityType: 'click_product',
+    //   detailSearch: searchBranch.text,
+    //   tagsBrand:
+    //       tags.where((tag) => tag.isSelected).map((tag) => tag.name).join(','),
+    // );
 
     var usernameKey = Info().userAPIProd;
     var passwordKey = Info().passAPIProd;
@@ -2116,14 +2165,14 @@ class _IndexScreenState extends State<IndexScreen>
     );
   }
 
-  Future<void> _logActivity({
-    required String employeeCode,
-    required String branchCode,
-    required String model,
-    required String activityType,
-    required String detailSearch,
-    required String tagsBrand,
-  }) async {
+  Future<void> _logActivity(
+      {required String employeeCode,
+      required String branchCode,
+      required String model,
+      required String activityType,
+      required String detailSearch,
+      required String tagsBrand,
+      required String promotionType}) async {
     Map<String, dynamic> logData = {
       'employee_code': employeeCode,
       'branch_code': branchCode,
@@ -2131,14 +2180,30 @@ class _IndexScreenState extends State<IndexScreen>
       'activity_type': activityType,
       'detail_search': detailSearch,
       'tags_brand': tagsBrand,
+      'promotion_type': promotionType
     };
 
-    var usernameKey = Info().userAPI;
-    var passwordKey = Info().passAPI;
-    final encodedCredentials =
-        base64Encode(utf8.encode('$usernameKey:$passwordKey'));
+    try {
+      final uri = Uri.parse(
+          Info().logActivity); // เปลี่ยน URL เป็น URL ที่ต้องการใช้จริง
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(logData),
+      );
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
-    print('logActivity ${json.encode(logData)}');
+      if (response.statusCode == 200) {
+        print('Log activity successful');
+      } else {
+        throw Exception('Failed to log activity');
+      }
+    } catch (error) {
+      print('Error logging activity: $error');
+    }
   }
 
   @override

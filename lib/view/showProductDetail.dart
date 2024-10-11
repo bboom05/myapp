@@ -6,6 +6,8 @@ import 'package:myapp/system/info.dart'; // อิมพอร์ตไฟล์
 import 'package:myapp/model/user.dart';
 import 'package:flutter/scheduler.dart';
 
+import '../model/loading.dart';
+
 class ShowProductDetail extends StatefulWidget {
   final Map<String, dynamic> product; // รับข้อมูล product แบบ Map
   final String selectedType; // รับประเภทที่เลือก
@@ -52,8 +54,6 @@ class _ShowProductDetailState extends State<ShowProductDetail>
       selectedType = widget.selectedType;
     });
   }
-
-
 
   List<Widget> _buildBlockData(Map<String, dynamic> product,
       List<dynamic> premium, String selectedType) {
@@ -542,6 +542,8 @@ class _ShowProductDetailState extends State<ShowProductDetail>
           children: banks.map<Widget>((bank) {
             String code = bank['code']?.trim() ?? '-';
             code = code.isEmpty ? '-' : code;
+            var ppm = bank['plans'];
+            print('ppm: $ppm');
             return Column(
               children: [
                 Padding(
@@ -610,17 +612,16 @@ class _ShowProductDetailState extends State<ShowProductDetail>
                           Expanded(
                             flex: 1,
                             child: Center(
-                              child: Text(
-                                bank['plans'][0]['ppm'] != null
-                                    ? '${formatter.format(double.tryParse(bank['plans'][0]['ppm']) ?? 0)}'
-                                    : '-',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontFamily: 'Kanit',
-                                ),
-                                textAlign: TextAlign.center,
+                                child: Text(
+                              bank['plans'][0]['ppm'] != null
+                                  ? '${formatter.format(bank['plans'][0]['ppm'] is String ? double.tryParse(bank['plans'][0]['ppm']) ?? 0 : bank['plans'][0]['ppm'])}'
+                                  : '-',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontFamily: 'Kanit',
                               ),
-                            ),
+                              textAlign: TextAlign.center,
+                            )),
                           ),
                         ],
                       ),
@@ -652,17 +653,16 @@ class _ShowProductDetailState extends State<ShowProductDetail>
                         Expanded(
                           flex: 1,
                           child: Center(
-                            child: Text(
-                              bank['plans'][i]['ppm'] != null
-                                  ? '${formatter.format(double.tryParse(bank['plans'][i]['ppm']) ?? 0)}'
-                                  : '-',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontFamily: 'Kanit',
-                              ),
-                              textAlign: TextAlign.center,
+                              child: Text(
+                            bank['plans'][i]['ppm'] != null
+                                ? '${formatter.format(bank['plans'][i]['ppm'] is String ? double.tryParse(bank['plans'][i]['ppm']) ?? 0 : bank['plans'][i]['ppm'])}'
+                                : '-',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontFamily: 'Kanit',
                             ),
-                          ),
+                            textAlign: TextAlign.center,
+                          )),
                         ),
                       ],
                     ),
@@ -915,7 +915,9 @@ class _ShowProductDetailState extends State<ShowProductDetail>
     var promotion =
         promotions != null && promotions.isNotEmpty ? promotions[0] : null;
 
-    if (promotion == null) {
+    if (promotion == null ||
+        promotion['note_pm'] == null ||
+        promotion['note_pm'].toString().isEmpty) {
       return Container(
         width: MediaQuery.of(context).size.width,
         margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -988,7 +990,9 @@ class _ShowProductDetailState extends State<ShowProductDetail>
     var promotion =
         promotions != null && promotions.isNotEmpty ? promotions[0] : null;
 
-    if (promotion == null) {
+    if (promotion == null ||
+        promotion['allbrandfreegift'] == null ||
+        promotion['allbrandfreegift'].toString().isEmpty) {
       return Container(
         width: MediaQuery.of(context).size.width,
         margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -1066,7 +1070,9 @@ class _ShowProductDetailState extends State<ShowProductDetail>
     var promotion =
         promotions != null && promotions.isNotEmpty ? promotions[0] : null;
 
-    if (promotion == null) {
+    if (promotion == null ||
+        promotion['tgfreegift'] == null ||
+        promotion['tgfreegift'].toString().isEmpty) {
       return Container(
         width: MediaQuery.of(context).size.width,
         margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -1300,7 +1306,7 @@ class _ShowProductDetailState extends State<ShowProductDetail>
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: isLoading
-            ? Center(child: CircularProgressIndicator())
+            ? Center(child: DotLoadingIndicator())
             : productDetails != null
                 ? SingleChildScrollView(
                     child: Column(
