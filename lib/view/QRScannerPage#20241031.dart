@@ -121,7 +121,6 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
     }
 
     var product = products[0]; // Just picking the first product for now.
-  print('product before send : $product');
 
     Navigator.pushReplacement(
       context, // Use pushReplacement to remove QRScannerPage from the stack
@@ -211,6 +210,182 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
     super.dispose();
   }
 }
+
+// class CustomLoadingIndicator extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return Center(
+//       child: Container(
+//         width: 50, // กำหนดขนาดของวงกลม
+//         height: 50,
+//         decoration: BoxDecoration(
+//           shape: BoxShape.circle,
+//           // boxShadow: [
+//           //   BoxShadow(
+//           //     color: Colors.orangeAccent.withOpacity(0.3),
+//           //     blurRadius: 10,
+//           //     spreadRadius: 5,
+//           //   ),
+//           // ],
+//         ),
+//         child: CircularProgressIndicator(
+//           strokeWidth: 6.0, // ปรับขนาดของขอบเส้น
+//           valueColor: AlwaysStoppedAnimation<Color>(
+//             Colors.orange, // เปลี่ยนเป็นสีส้ม
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
+
+// New Page for Promotion Selection with minimalist design
+// class PromotionSelectionPage extends StatelessWidget {
+//   final Map<String, dynamic> product;
+//   final List<dynamic> premium;
+
+//   const PromotionSelectionPage(
+//       {required this.product, required this.premium, Key? key})
+//       : super(key: key);
+
+//   @override
+//   Widget build(BuildContext context) {
+//     var branchDetails = product['branch_details'];
+//     List<Map<String, dynamic>> availablePromotions = [];
+//     // print('product: $product');
+//     print('premium: ${premium}');
+//     if (branchDetails != null &&
+//         branchDetails['promotions_flash_sale'] != null &&
+//         branchDetails['promotions_flash_sale'].isNotEmpty) {
+//       availablePromotions.add({
+//         'type': 'flash_sale',
+//         'text': 'Flash Sale หลัก',
+//         'icon': Icons.flash_on,
+//         'color': Colors.red,
+//       });
+//     }
+
+//     if (branchDetails != null &&
+//         branchDetails['promotions_flash_sale_second'] != null &&
+//         branchDetails['promotions_flash_sale_second'].isNotEmpty) {
+//       availablePromotions.add({
+//         'type': 'flash_sale_secondary',
+//         'text': 'Flash Sale รอง',
+//         'icon': Icons.flash_auto,
+//         'color': Colors.orange,
+//       });
+//     }
+
+//     if (branchDetails != null &&
+//         branchDetails['promotions_main'] != null &&
+//         branchDetails['promotions_main'].isNotEmpty) {
+//       availablePromotions.add({
+//         'type': 'general',
+//         'text': 'ทั่วไป หลัก',
+//         'icon': Icons.store,
+//         'color': Colors.green,
+//       });
+//     }
+
+//     if (branchDetails != null &&
+//         branchDetails['promotions_second'] != null &&
+//         branchDetails['promotions_second'].isNotEmpty) {
+//       availablePromotions.add({
+//         'type': 'general_secondary',
+//         'text': 'ทั่วไป รอง',
+//         'icon': Icons.storefront,
+//         'color': Colors.blue,
+//       });
+//     }
+
+//     return Scaffold(
+//       appBar: AppBar(
+//         // automaticallyImplyLeading: false,
+//         iconTheme: IconThemeData(
+//           color: Colors.white, //change your color here
+//         ),
+//         flexibleSpace: Container(
+//           decoration: const BoxDecoration(
+//             gradient: LinearGradient(
+//               colors: [
+//                 Color(0xFFFFA726), // สีส้มอ่อน
+//                 Color(0xFFFF5722), // สีส้มเข้ม
+//               ],
+//               begin: Alignment.topLeft,
+//               end: Alignment.bottomRight,
+//             ),
+//           ),
+//         ),
+//         elevation: 0,
+//         title: const Text(
+//           'เลือกโปรโมชั่น',
+//           style: TextStyle(
+//             fontFamily: 'Kanit',
+//             color: Colors.white,
+//             fontWeight: FontWeight.w300, // ใช้ตัวอักษรแบบบาง
+//           ),
+//         ),
+//         backgroundColor: Colors.white,
+//       ),
+//       body: Padding(
+//         padding: const EdgeInsets.all(16.0),
+//         child: GridView.builder(
+//           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+//             crossAxisCount: 2,
+//             mainAxisSpacing: 16.0,
+//             crossAxisSpacing: 16.0,
+//           ),
+//           itemCount: availablePromotions.length,
+//           itemBuilder: (context, index) {
+//             var promotion = availablePromotions[index];
+//             // print('product: $product');
+//             return GestureDetector(
+//               onTap: () {
+//                 Navigator.push(
+//                   context,
+//                   MaterialPageRoute(
+//                     builder: (context) => ProductDetailPage(
+//                       productData: [product],
+//                       premiumData: List<Map<String, dynamic>>.from(premium),
+//                       selectedType: promotion['type'],
+//                     ),
+//                   ),
+//                 );
+//               },
+//               child: Container(
+//                 decoration: BoxDecoration(
+//                   color: Colors.white,
+//                   borderRadius: BorderRadius.circular(12),
+//                   border: Border.all(color: Colors.grey.shade300),
+//                 ),
+//                 padding: const EdgeInsets.all(16.0),
+//                 child: Column(
+//                   mainAxisAlignment: MainAxisAlignment.center,
+//                   children: [
+//                     Icon(
+//                       promotion['icon'],
+//                       color: promotion['color'],
+//                       size: 48,
+//                     ),
+//                     const SizedBox(height: 16),
+//                     Text(
+//                       promotion['text'],
+//                       style: const TextStyle(
+//                         fontSize: 18,
+//                         fontWeight: FontWeight.bold,
+//                       ),
+//                       textAlign: TextAlign.center,
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//             );
+//           },
+//         ),
+//       ),
+//     );
+//   }
+// }
 
 class PromotionSelectionPage extends StatelessWidget {
   final Map<String, dynamic> product;

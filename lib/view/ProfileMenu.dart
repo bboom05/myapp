@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/model/user.dart';
 import 'package:myapp/view/ChooseLogin.dart';
+import 'package:myapp/view/ContactUs.dart';
 import 'package:myapp/view/Login.dart';
 import 'package:toast/toast.dart';
 import 'package:myapp/view/ProfilePage.dart'; // เพิ่มการนำเข้า ProfilePage
@@ -125,7 +126,6 @@ class _ProfileMenuState extends State<ProfileMenu> {
 
     return Scaffold(
       appBar: AppBar(
-        
         automaticallyImplyLeading: false,
         flexibleSpace: Container(
           decoration: const BoxDecoration(
@@ -174,6 +174,19 @@ class _ProfileMenuState extends State<ProfileMenu> {
                       );
                     },
                   ),
+                  _buildListTile(
+                    'ติดต่อเรา',
+                    Icons.contact_support_sharp,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => Contactus(),
+                        ),
+                      );
+                    },
+                  ),
+
                   // _buildSectionTitle('ตั้งค่า'),
                 ],
               ),

@@ -21,7 +21,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late Widget initialRoute = const HomeView();
+  late Widget initialRoute = HomeView();
 
   @override
   void initState() {
@@ -33,7 +33,7 @@ class _MyAppState extends State<MyApp> {
     var user = User();
     await user.init();
     if (user.isLogin) {
-      initialRoute = const HomeView();
+      initialRoute = HomeView();
     } else {
       initialRoute = const ChooseLogin();
     }

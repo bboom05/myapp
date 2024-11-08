@@ -1,17 +1,32 @@
 import 'dart:async';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
+import 'package:iconly/iconly.dart';
 import 'dart:convert';
 import 'package:myapp/model/user.dart';
 import 'package:myapp/view/HeaderHome.dart';
+import 'package:myapp/view/ProductIncoming.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
-
 import '../system/info.dart';
+import 'QRScannerPage.dart';
 import 'showProductDetail.dart';
+
+final List<Map<String, dynamic>> menuItems = [
+  {
+    "label": "In Transit",
+    "image": "assets/icons/transporting.png",
+    "color": Colors.deepOrange,
+    "screen": ProductIncoming()
+  }
+];
+
+// Placeholder Screens for each menu item
 
 class IndexScreen extends StatefulWidget {
   const IndexScreen({super.key});
@@ -24,21 +39,27 @@ class _IndexScreenState extends State<IndexScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   TabController? _premiumTabController;
-  final _selectedColor = Color(0xffFF8C00);
-  final _unselectedColor = Color(0xff5f6368);
+  final _selectedColor = const Color(0xffFF8C00);
+  final _unselectedColor = const Color(0xff5f6368);
   final RefreshController _refreshController =
       RefreshController(initialRefresh: false);
 
   final formKeyBranch = GlobalKey<FormState>();
   final searchBranch = TextEditingController();
   final PageController _pageController = PageController();
+  final ValueNotifier<List<Tag>> tagsNotifier = ValueNotifier([]);
+  final CarouselController _carouselController = CarouselController();
+  int _currentPage = 0; // Track the current page index
   Timer? _timer;
+  final ValueNotifier<int> totalProductsNotifier = ValueNotifier(0);
 
   var user = User();
   bool isLogin = false;
   var fullname = "";
   var brance_code = "";
   var brance_name = "";
+  var select_branch_code = "";
+  var select_branch_name = "";
   var query = "";
 
   List<Tag> tags = [];
@@ -46,19 +67,24 @@ class _IndexScreenState extends State<IndexScreen>
   List<Map<String, dynamic>> _allProductData = [];
   List<Map<String, dynamic>> _nearbyBranches = [];
   List<Map<String, dynamic>> _premiumData = [];
+  List<Map<String, String>> branch_codes_area = [];
+
   bool isLoading = false;
   bool isBranchLoading = false;
 
   final List<Color> pastelColors = [
-    Color(0xFFFF6F61),
-    Color(0xFFFFB347),
-    Color(0xFFFFD700),
-    Color(0xFF00BFFF),
-    Color(0xFF9370DB),
-    Color(0xFFFF69B4),
-    Color(0xFFFFA07A),
-    Color(0xFF20B2AA),
-    Color(0xFF8A2BE2),
+    // Color(0xFFFF6F61),
+    // Color(0xFFFFB347),
+    // Color(0xFFFFD700),
+    // Color(0xFF00BFFF),
+    // Color(0xFF9370DB),
+    // Color(0xFFFF69B4),
+    // Color(0xFFFFA07A),
+    // Color(0xFF20B2AA),
+    // Color(0xFF8A2BE2),
+    // Color(0xFF006BFF),
+    // Color(0xFFEEEEEE),
+    const Color(0xFFFFFFFF),
   ];
 
   Set<String> _loggedProducts = Set<String>();
@@ -71,9 +97,8 @@ class _IndexScreenState extends State<IndexScreen>
       _loadInitialData();
     });
 
-    // fetchNearbyBranches();
     // fetchPremiumData();
-    _timer = Timer.periodic(Duration(seconds: 10), (Timer timer) {
+    _timer = Timer.periodic(const Duration(seconds: 10), (Timer timer) {
       if (_pageController.hasClients) {
         int nextPage = _pageController.page!.toInt() + 1;
         if (nextPage >= 3) {
@@ -81,7 +106,7 @@ class _IndexScreenState extends State<IndexScreen>
         }
         _pageController.animateToPage(
           nextPage,
-          duration: Duration(milliseconds: 400),
+          duration: const Duration(milliseconds: 400),
           curve: Curves.easeInOut,
         );
       }
@@ -97,23 +122,6 @@ class _IndexScreenState extends State<IndexScreen>
     super.dispose();
   }
 
-  Future<void> fetchNearbyBranches() async {
-    setState(() {
-      isBranchLoading = true;
-    });
-    await Future.delayed(Duration(seconds: 2));
-    setState(() {
-      _nearbyBranches = [
-        {'branch_name': 'สาขาใกล้เคียง 1', 'branch_code': '001'},
-        {'branch_name': 'สาขาใกล้เคียง 2', 'branch_code': '002'},
-        {'branch_name': 'สาขาใกล้เคียง 3', 'branch_code': '003'},
-        {'branch_name': 'สาขาใกล้เคียง 4', 'branch_code': '004'},
-        {'branch_name': 'สาขาใกล้เคียง 5', 'branch_code': '005'},
-      ];
-      isBranchLoading = false;
-    });
-  }
-
   Future<void> getUsers() async {
     await user.init();
     setState(() {
@@ -121,6 +129,18 @@ class _IndexScreenState extends State<IndexScreen>
       fullname = user.fullname;
       brance_code = user.brance_code;
       brance_name = user.brance_name;
+      select_branch_code = user.select_branch_code;
+      select_branch_name = user.select_branch_name;
+      branch_codes_area = user.branch_codes_area
+          .map((e) => {
+                "branch_code": e['branch_code']?.toString() ?? "",
+                "branch_name": e['branch_name']?.toString() ?? "Unknown"
+              })
+          .toList();
+
+      print('branch_codes_area: $branch_codes_area');
+
+      print('branch_codes_area abc: {$branch_codes_area}');
     });
   }
 
@@ -128,14 +148,44 @@ class _IndexScreenState extends State<IndexScreen>
     _search();
   }
 
-  void _onTagClick(Tag tag) {
-    setState(() {
-      tag.isSelected = !tag.isSelected;
-    });
-    _filterProducts();
-  }
-
 // ค้นหา iphone apple 15 pro max 12 จะไม่เจออะไรเลย
+
+  // void _filterProducts() {
+  //   setState(() {
+  //     isLoading = true;
+  //   });
+  //   print('tags: $tags');
+
+  //   List<String> selectedTags =
+  //       tags.where((tag) => tag.isSelected).map((tag) => tag.name).toList();
+  //   String searchQuery = searchBranch.text.toLowerCase().trim();
+
+  //   // แยกคำค้นหาที่มากกว่าหนึ่งคำ
+  //   List<String> searchTerms = searchQuery.split(' ');
+
+  //   _productData = _allProductData.where((product) {
+  //     // ตรวจสอบการจับคู่คำค้นหาทุกคำ
+  //     bool matchesQuery = searchTerms.every((term) {
+  //       var productName = product['product_name'].toString().toLowerCase();
+
+  //       // เปรียบเทียบด้วย contains() และ startsWith() เพื่อความยืดหยุ่น
+  //       return productName.contains(term) || productName.startsWith(term);
+  //     });
+
+  //     // ตรวจสอบการจับคู่ Tags
+  //     bool matchesTags = selectedTags.isEmpty ||
+  //         (selectedTags.contains('No Brand') &&
+  //             (product['brand'] == null || product['brand'] == 'Unknown')) ||
+  //         selectedTags.contains(product['brand'].toString());
+
+  //     return matchesQuery && matchesTags;
+  //   }).toList();
+
+  //   setState(() {
+  //     isLoading = false;
+  //   });
+  // }
+
   void _filterProducts() {
     setState(() {
       isLoading = true;
@@ -144,26 +194,26 @@ class _IndexScreenState extends State<IndexScreen>
     List<String> selectedTags =
         tags.where((tag) => tag.isSelected).map((tag) => tag.name).toList();
     String searchQuery = searchBranch.text.toLowerCase().trim();
-
-    // แยกคำค้นหาที่มากกว่าหนึ่งคำ
     List<String> searchTerms = searchQuery.split(' ');
 
     _productData = _allProductData.where((product) {
-      // ตรวจสอบการจับคู่คำค้นหาทุกคำ
       bool matchesQuery = searchTerms.every((term) {
         var productName = product['product_name'].toString().toLowerCase();
-
-        // เปรียบเทียบด้วย contains() และ startsWith() เพื่อความยืดหยุ่น
         return productName.contains(term) || productName.startsWith(term);
       });
 
-      // ตรวจสอบการจับคู่ Tags
       bool matchesTags = selectedTags.isEmpty ||
+          (selectedTags.contains('No Brand') &&
+              (product['brand'] == null || product['brand'] == 'Unknown')) ||
           selectedTags.contains(product['brand'].toString());
 
       return matchesQuery && matchesTags;
     }).toList();
 
+    // อัปเดตจำนวนสินค้าหลังจากกรองข้อมูล
+    totalProductsNotifier.value = _productData.length;
+
+    // Update the total product count based on filtered data
     setState(() {
       isLoading = false;
     });
@@ -173,14 +223,13 @@ class _IndexScreenState extends State<IndexScreen>
     setState(() {
       isLoading = true;
     });
-
     List<String> selectedTags =
         tags.where((tag) => tag.isSelected).map((tag) => tag.name).toList();
     String searchQuery = searchBranch.text;
     Map<String, dynamic> data = {
       'product_name': searchQuery,
       'tags': selectedTags,
-      'warehouse': brance_code,
+      'warehouse': select_branch_code,
     };
     print("data ${data}");
     await _sendSearchData(data);
@@ -203,35 +252,13 @@ class _IndexScreenState extends State<IndexScreen>
       'Content-Type': 'application/json',
     });
 
-    // if (response.statusCode == 200) {
-    //   var rs = json.decode(response.body);
-    //   if (rs is List && rs.isNotEmpty) {
-    //     setState(() {
-    //       _allProductData = List<Map<String, dynamic>>.from(rs);
-    //       _productData = _allProductData;
-    //       _generateTags();
-    //       isLoading = false;
-    //     });
-    //   } else if (rs is Map && rs.containsKey('data')) {
-    //     setState(() {
-    //       _allProductData = List<Map<String, dynamic>>.from(rs['data']);
-    //       _productData = _allProductData;
-    //       _generateTags();
-    //       isLoading = false;
-    //     });
-    //   }
-    // } else {
-    //   setState(() {
-    //     isLoading = false;
-    //   });
-    // }
-
     if (response.statusCode == 200) {
       var rs = json.decode(response.body);
       if (rs is List && rs.isNotEmpty) {
         setState(() {
           _allProductData = List<Map<String, dynamic>>.from(rs);
           _productData = _allProductData;
+          totalProductsNotifier.value = _productData.length;
           _generateTags();
           isLoading = false; // เมื่อมีข้อมูลให้หยุดการโหลด
         });
@@ -239,57 +266,126 @@ class _IndexScreenState extends State<IndexScreen>
         setState(() {
           _allProductData = List<Map<String, dynamic>>.from(rs['data']);
           _productData = _allProductData;
+          totalProductsNotifier.value = _productData.length;
           _generateTags();
           isLoading = false; // เมื่อมีข้อมูลให้หยุดการโหลด
         });
       } else {
         setState(() {
+          _allProductData = [];
           _productData = []; // กรณีไม่มีข้อมูลใน rs
+          totalProductsNotifier.value = 0;
+          _generateTags();
           isLoading = false; // หยุดการโหลดเมื่อไม่มีข้อมูล
         });
       }
     } else {
       setState(() {
+        totalProductsNotifier.value = 0;
         _productData = []; // กรณีมีปัญหาใน response
         isLoading = false; // หยุดการโหลดในกรณีที่มีข้อผิดพลาด
       });
     }
-
-    // print("response ${response.body}");
-    // print("response ${response.statusCode}");
-    // print("response ${response.reasonPhrase}");
-    // print("response ${response.headers}");
-    // print("response ${response.request}");
-    print("_productData ${_productData}");
-    print("isLoading ${isLoading}");
   }
+
+  // final ValueNotifier<List<Tag>> tagsNotifier = ValueNotifier([]);
 
   void _generateTags() {
     Map<String, int> brandCount = {};
+    int noBrandCount = 0; // ตัวแปรสำหรับนับสินค้าที่ไม่มีแบรนด์
+
     for (var product in _allProductData) {
-      String brand = product['brand'] ?? 'Unknown';
-      if (brand != 'Unknown') {
-        if (brandCount.containsKey(brand)) {
-          brandCount[brand] = brandCount[brand]! + 1;
-        } else {
-          brandCount[brand] = 1;
-        }
+      String? brand = product['brand']; // ตรวจสอบ brand
+
+      if (brand == null || brand == 'Unknown') {
+        noBrandCount++; // เพิ่มจำนวนสินค้าที่ไม่มีแบรนด์
+      } else {
+        brandCount[brand] = (brandCount[brand] ?? 0) + 1;
       }
     }
 
-    setState(() {
-      tags = [];
-      int index = 0;
-      brandCount.forEach((brand, count) {
-        tags.add(Tag(
-          name: brand,
-          quantity: count,
-          color: pastelColors[index % pastelColors.length],
-        ));
-        index++;
-      });
+    List<Tag> newTags = [];
+    int index = 0;
+    brandCount.forEach((brand, count) {
+      newTags.add(Tag(
+        name: brand,
+        quantity: count,
+        color: pastelColors[index % pastelColors.length],
+      ));
+      index++;
     });
+
+    if (noBrandCount > 0) {
+      newTags.add(Tag(
+        name: 'No Brand',
+        quantity: noBrandCount,
+        color: const Color(0xFFEEEEEE), // สีสำหรับ No Brand
+      ));
+    }
+    setState(() {
+      tags = newTags; // ตรวจสอบการกำหนดค่า tags ใหม่
+    });
+    tagsNotifier.value = newTags; // อัปเดตค่าใน ValueNotifier
   }
+
+  void _onTagClick(Tag tag) {
+    setState(() {
+      tag.isSelected = !tag.isSelected;
+    });
+    tagsNotifier.value = List.from(tagsNotifier.value); // อัปเดต ValueNotifier
+    _filterProducts();
+  }
+
+  // void _generateTags() {
+  //   Map<String, int> brandCount = {};
+  //   int noBrandCount = 0; // ตัวแปรสำหรับนับสินค้าที่ไม่มีแบรนด์
+
+  //   for (var product in _allProductData) {
+  //     String? brand = product['brand']; // ตรวจสอบ brand
+
+  //     if (brand == null || brand == 'Unknown') {
+  //       noBrandCount++; // เพิ่มจำนวนสินค้าที่ไม่มีแบรนด์
+  //     } else {
+  //       if (brandCount.containsKey(brand)) {
+  //         brandCount[brand] = brandCount[brand]! + 1;
+  //       } else {
+  //         brandCount[brand] = 1;
+  //       }
+  //     }
+  //   }
+
+  //   setState(() {
+  //     tags = [];
+  //     int index = 0;
+
+  //     // สร้างแท็กสำหรับแบรนด์ที่มีสินค้า
+  //     brandCount.forEach((brand, count) {
+  //       tags.add(Tag(
+  //         name: brand,
+  //         quantity: count,
+  //         color: pastelColors[index % pastelColors.length],
+  //       ));
+  //       index++;
+  //     });
+
+  //     // เพิ่มแท็ก No Brand ไว้ท้ายสุด
+  //     if (noBrandCount > 0) {
+  //       tags.add(Tag(
+  //         name: 'No Brand',
+  //         quantity: noBrandCount,
+  //         color: Color(0xFFEEEEEE), // สีสำหรับ No Brand
+  //       ));
+  //     }
+  //     print('tags: $tags');
+  //   });
+  // }
+
+  // void _onTagClick(Tag tag) {
+  //   setState(() {
+  //     tag.isSelected = !tag.isSelected;
+  //   });
+  //   _filterProducts();
+  // }
 
   Future<Map<String, dynamic>?> _fetchProductType(String productName) async {
     try {
@@ -297,8 +393,7 @@ class _IndexScreenState extends State<IndexScreen>
       var passwordKey = Info().passAPIProd;
       final encodedCredentials =
           base64Encode(utf8.encode('$usernameKey:$passwordKey'));
-      final uri =
-          Uri.parse(Info().getProductAndPromotion).replace(queryParameters: {
+      final uri = Uri.parse(Info().checkPromotion).replace(queryParameters: {
         'product_name': productName,
         'warehouse': brance_code,
       });
@@ -391,7 +486,7 @@ class _IndexScreenState extends State<IndexScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (BuildContext context) {
@@ -405,7 +500,7 @@ class _IndexScreenState extends State<IndexScreen>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
 
                     // สร้างปุ่มจาก availablePromotions
                     ...availablePromotions.map((promotion) {
@@ -421,7 +516,7 @@ class _IndexScreenState extends State<IndexScreen>
                                   product, promotion['type']);
                             },
                           ),
-                          SizedBox(height: 10),
+                          const SizedBox(height: 10),
                         ],
                       );
                     }).toList(),
@@ -470,7 +565,7 @@ class _IndexScreenState extends State<IndexScreen>
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -486,1679 +581,16 @@ class _IndexScreenState extends State<IndexScreen>
               icon,
               color: iconColor, // ใช้สีไอคอนที่ส่งมา
             ),
-            SizedBox(width: 10), // เว้นระยะระหว่างไอคอนกับข้อความ
+            const SizedBox(width: 10), // เว้นระยะระหว่างไอคอนกับข้อความ
             Text(
               text,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Kanit',
                 color: Colors.black, // สีข้อความเป็นสีดำเพื่อความคมชัด
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showProductDetailsOLD(String productName) async {
-    final formatter = NumberFormat('#,##0.00');
-
-    // await _logActivity(
-    //   employeeCode: user.employee_code,
-    //   branchCode: user.brance_code,
-    //   model: productName,
-    //   activityType: 'click_product',
-    //   detailSearch: searchBranch.text,
-    //   tagsBrand:
-    //       tags.where((tag) => tag.isSelected).map((tag) => tag.name).join(','),
-    // );
-
-    var usernameKey = Info().userAPIProd;
-    var passwordKey = Info().passAPIProd;
-    final encodedCredentials =
-        base64Encode(utf8.encode('$usernameKey:$passwordKey'));
-
-    final uri =
-        Uri.parse(Info().getProductAndPromotion).replace(queryParameters: {
-      'product_name': productName,
-      'warehouse': brance_code,
-    });
-
-    final response = await http.get(uri, headers: {
-      'Authorization': 'Basic $encodedCredentials',
-      'Content-Type': 'application/json',
-    });
-
-    if (response.statusCode == 200) {
-      var dataJson = json.decode(response.body);
-      var product = dataJson['products'][0];
-
-      if (dataJson.containsKey('premium')) {
-        setState(() {
-          _premiumData = List<Map<String, dynamic>>.from(dataJson['premium']);
-          _premiumTabController =
-              TabController(length: _premiumData.length, vsync: this);
-        });
-      }
-      var branchDetails = product['branch_details'];
-      var promotionsMain = branchDetails['promotions_main'] ?? [];
-      var promotionsFlashSale = branchDetails['promotions_flash_sale'] ?? [];
-
-      var installmentPlansFlashSale =
-          branchDetails['installment_plans_flash_sale'] ?? [];
-      var isFlashSale = branchDetails['isFlashSale'] ?? false;
-
-      if (dataJson['products'] != null && dataJson['products'].isNotEmpty) {
-        if (product != null) {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
-            ),
-            builder: (context) {
-              return FractionallySizedBox(
-                heightFactor: 0.9,
-                child: isFlashSale
-                    ? _buildTabbedContent(
-                        product,
-                        promotionsMain,
-                        promotionsFlashSale,
-                        installmentPlansFlashSale,
-                        formatter)
-                    : _buildGeneralTab(product, promotionsMain, formatter),
-              );
-            },
-          );
-        }
-      }
-    }
-  }
-
-// สร้าง Widget ที่มี TabBar สำหรับ Flash Sale และทั่วไป
-  Widget _buildTabbedContent(
-      Map<String, dynamic> product,
-      List promotionsMain,
-      List promotionsFlashSale,
-      List installmentPlansFlashSale,
-      NumberFormat formatter) {
-    return DefaultTabController(
-      length: 2, // มีสองแท็บใหญ่: Flash Sale และ ทั่วไป
-      child: Column(
-        children: [
-          // Header ของ TabBar ใหญ่
-          TabBar(
-            labelColor: Colors.orange,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Colors.orange,
-            tabs: [
-              Tab(
-                child: Text(
-                  'Flash Sale',
-                  style: TextStyle(
-                    fontFamily: 'Kanit', // เพิ่ม fontFamily ที่นี่
-                    fontSize: 16, // ขนาดของฟอนต์
-                    fontWeight: FontWeight.bold, // น้ำหนักของฟอนต์
-                  ),
-                ),
-              ),
-              Tab(
-                child: Text(
-                  'ทั่วไป',
-                  style: TextStyle(
-                    fontFamily: 'Kanit', // เพิ่ม fontFamily ที่นี่
-                    fontSize: 16, // ขนาดของฟอนต์
-                    fontWeight: FontWeight.bold, // น้ำหนักของฟอนต์
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                // เนื้อหาของ Flash Sale
-                _buildFlashSaleTab(product, promotionsFlashSale,
-                    installmentPlansFlashSale, formatter),
-                // เนื้อหาของทั่วไป
-                _buildGeneralTab(product, promotionsMain, formatter),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-// สร้าง Widget สำหรับเนื้อหา Flash Sale
-  Widget _buildFlashSaleTab(
-      Map<String, dynamic> product,
-      List promotionsFlashSale,
-      List installmentPlansFlashSale,
-      NumberFormat formatter) {
-    return SingleChildScrollView(
-      child: Container(
-        width: MediaQuery.of(context).size.width,
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              product['product_name'] ?? '',
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Kanit'),
-            ),
-            SizedBox(height: 8),
-            // การแสดงผลส่วนอื่น ๆ เช่น ราคา, ตัวเลือกสินค้า, การรับประกัน ฯลฯ
-            Text.rich(
-              TextSpan(
-                children: [
-                  if (promotionsFlashSale != null &&
-                      promotionsFlashSale.isNotEmpty) ...[
-                    TextSpan(
-                      children: () {
-                        double rrp = double.tryParse(promotionsFlashSale[0]
-                                    ['price_rrp']
-                                .replaceAll(',', '')) ??
-                            0;
-                        double netSellingPrice = double.tryParse(
-                                promotionsFlashSale[0]['netselling_price']
-                                    .replaceAll(',', '')) ??
-                            0;
-
-                        if (rrp != netSellingPrice) {
-                          return [
-                            if (rrp != 0.00)
-                              TextSpan(
-                                text: '฿${formatter.format(rrp)}',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontFamily: 'Kanit',
-                                  color: Colors.grey,
-                                  decoration: TextDecoration.lineThrough,
-                                ),
-                              ),
-                            if (netSellingPrice != 0.00)
-                              TextSpan(
-                                text: ' ฿${formatter.format(netSellingPrice)}',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontFamily: 'Kanit',
-                                  color: Colors.orange,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            if (rrp > netSellingPrice)
-                              TextSpan(
-                                text:
-                                    ' -${_calculateDiscountPercentage(rrp, netSellingPrice)}%',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: 'Kanit',
-                                  color: Colors.red,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                              ),
-                          ];
-                        } else {
-                          return [
-                            if (netSellingPrice != 0.00)
-                              TextSpan(
-                                text: ' ฿${formatter.format(netSellingPrice)}',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontFamily: 'Kanit',
-                                  color: Colors.orange,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                          ];
-                        }
-                      }(),
-                    ),
-                  ] else ...[
-                    if (product['price'] != null && product['price'] != '0.00')
-                      TextSpan(
-                        text:
-                            ' ฿${formatter.format(double.tryParse(product['price'].replaceAll(',', '')) ?? 0)}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Kanit',
-                          color: Colors.orange,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                  ],
-                ],
-              ),
-            ),
-            SizedBox(height: 16),
-            // Section ตัวเลือกสินค้า
-            _buildVariantsSection(product),
-            SizedBox(height: 16),
-            // Card สำหรับการรับประกัน
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.security, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Text(
-                      'การรับประกัน',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Kanit',
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
-                _buildProductWarrantyAndProtection(product),
-              ],
-            ),
-            SizedBox(height: 16),
-            // โปรโมชั่นบัตรเครดิต
-            Row(
-              children: [
-                Icon(Icons.credit_card, color: Colors.orange),
-                SizedBox(width: 8),
-                Text(
-                  'โปรโมชั่นบัตรเครดิต:',
-                  style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            _buildTabBar(product, isFlashSale: true),
-
-            const SizedBox(height: 16),
-            // รายการของแถม
-            Row(
-              children: [
-                Icon(Icons.card_giftcard, color: Colors.orange),
-                SizedBox(width: 8),
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: 'รายการของแถม: ',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Kanit',
-                        ),
-                      ),
-                      TextSpan(
-                        text: '(เลือกได้กลุ่มละ 1 อย่าง)',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'Kanit',
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              ],
-            ),
-            SizedBox(height: 8),
-            _buildOptionSetList(product),
-            const SizedBox(height: 16),
-            // กลุ่มรายการของแถม
-            Row(
-              children: [
-                Icon(Icons.format_list_bulleted, color: Colors.orange),
-                SizedBox(width: 8),
-                Text(
-                  'กลุ่มรายการของแถม:',
-                  style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            _buildPremiumTabBar(),
-            const SizedBox(height: 16),
-            // Note:
-            Row(
-              children: [
-                Icon(Icons.event_note, color: Colors.orange),
-                SizedBox(width: 8),
-                Text(
-                  'Note:',
-                  style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            _buildNoteData(product),
-            const SizedBox(height: 16),
-            // ของแถมเพิ่ม TG:
-            Row(
-              children: [
-                Icon(Icons.event_note, color: Colors.orange),
-                SizedBox(width: 8),
-                Text(
-                  'ของแถมเพิ่ม TG:',
-                  style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            _buildNoteTG(product),
-            const SizedBox(height: 16),
-            // ของแถมแบรนด์ทุกช่องทาง:
-            Row(
-              children: [
-                Icon(Icons.event_note, color: Colors.orange),
-                SizedBox(width: 8),
-                Text(
-                  'ของแถมแบรนด์ทุกช่องทาง:',
-                  style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            _buildNoteGiftBrand(product),
-          ],
-        ),
-      ),
-    );
-  }
-
-// สร้าง Widget สำหรับเนื้อหาทั่วไป
-  Widget _buildGeneralTab(Map<String, dynamic> product, List promotionsMain,
-      NumberFormat formatter) {
-    return SingleChildScrollView(
-      child: Container(
-        width: MediaQuery.of(context).size.width,
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              product['product_name'] ?? '',
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Kanit'),
-            ),
-            SizedBox(height: 8),
-            // การแสดงผลส่วนอื่น ๆ เช่น ราคา, ตัวเลือกสินค้า, การรับประกัน ฯลฯ
-            Text.rich(
-              TextSpan(
-                children: [
-                  if (promotionsMain != null && promotionsMain.isNotEmpty) ...[
-                    TextSpan(
-                      children: () {
-                        double rrp = double.tryParse(promotionsMain[0]
-                                    ['price_rrp']
-                                .replaceAll(',', '')) ??
-                            0;
-                        double netSellingPrice = double.tryParse(
-                                promotionsMain[0]['netselling_price']
-                                    .replaceAll(',', '')) ??
-                            0;
-
-                        if (rrp != netSellingPrice) {
-                          return [
-                            if (rrp != 0.00)
-                              TextSpan(
-                                text: '฿${formatter.format(rrp)}',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontFamily: 'Kanit',
-                                  color: Colors.grey,
-                                  decoration: TextDecoration.lineThrough,
-                                ),
-                              ),
-                            if (netSellingPrice != 0.00)
-                              TextSpan(
-                                text: ' ฿${formatter.format(netSellingPrice)}',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontFamily: 'Kanit',
-                                  color: Colors.orange,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            if (rrp > netSellingPrice)
-                              TextSpan(
-                                text:
-                                    ' -${_calculateDiscountPercentage(rrp, netSellingPrice)}%',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: 'Kanit',
-                                  color: Colors.red,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                              ),
-                          ];
-                        } else {
-                          return [
-                            if (netSellingPrice != 0.00)
-                              TextSpan(
-                                text: ' ฿${formatter.format(netSellingPrice)}',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontFamily: 'Kanit',
-                                  color: Colors.orange,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                          ];
-                        }
-                      }(),
-                    ),
-                  ] else ...[
-                    if (product['price'] != null && product['price'] != '0.00')
-                      TextSpan(
-                        text:
-                            ' ฿${formatter.format(double.tryParse(product['price'].replaceAll(',', '')) ?? 0)}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Kanit',
-                          color: Colors.orange,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                  ],
-                ],
-              ),
-            ),
-            SizedBox(height: 16),
-            // Section ตัวเลือกสินค้า
-            _buildVariantsSection(product),
-            SizedBox(height: 16),
-            // Card สำหรับการรับประกัน
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.security, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Text(
-                      'การรับประกัน',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Kanit',
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
-                _buildProductWarrantyAndProtection(product),
-              ],
-            ),
-            SizedBox(height: 16),
-            // โปรโมชั่นบัตรเครดิต
-            Row(
-              children: [
-                Icon(Icons.credit_card, color: Colors.orange),
-                SizedBox(width: 8),
-                Text(
-                  'โปรโมชั่นบัตรเครดิต:',
-                  style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            _buildTabBar(product),
-            const SizedBox(height: 16),
-            // รายการของแถม
-            Row(
-              children: [
-                Icon(Icons.card_giftcard, color: Colors.orange),
-                SizedBox(width: 8),
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: 'รายการของแถม: ',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Kanit',
-                        ),
-                      ),
-                      TextSpan(
-                        text: '(เลือกได้กลุ่มละ 1 อย่าง)',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'Kanit',
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              ],
-            ),
-            SizedBox(height: 8),
-            _buildOptionSetList(product),
-            const SizedBox(height: 16),
-            // กลุ่มรายการของแถม
-            Row(
-              children: [
-                Icon(Icons.format_list_bulleted, color: Colors.orange),
-                SizedBox(width: 8),
-                Text(
-                  'กลุ่มรายการของแถม:',
-                  style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            _buildPremiumTabBar(),
-            const SizedBox(height: 16),
-            // Note:
-            Row(
-              children: [
-                Icon(Icons.event_note, color: Colors.orange),
-                SizedBox(width: 8),
-                Text(
-                  'Note:',
-                  style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            _buildNoteData(product),
-            const SizedBox(height: 16),
-            // ของแถมเพิ่ม TG:
-            Row(
-              children: [
-                Icon(Icons.event_note, color: Colors.orange),
-                SizedBox(width: 8),
-                Text(
-                  'ของแถมเพิ่ม TG:',
-                  style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            _buildNoteTG(product),
-            const SizedBox(height: 16),
-            // ของแถมแบรนด์ทุกช่องทาง:
-            Row(
-              children: [
-                Icon(Icons.event_note, color: Colors.orange),
-                SizedBox(width: 8),
-                Text(
-                  'ของแถมแบรนด์ทุกช่องทาง:',
-                  style: TextStyle(fontSize: 16, fontFamily: 'Kanit'),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            _buildNoteGiftBrand(product),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _calculateDiscountPercentage(
-      double originalPrice, double discountedPrice) {
-    if (originalPrice == 0) return '0';
-    double discount = ((originalPrice - discountedPrice) / originalPrice) * 100;
-    return discount.toStringAsFixed(0); // แสดงผลเป็นจำนวนเต็ม
-  }
-
-  Widget _buildTabBar(Map<String, dynamic> product,
-      {bool isFlashSale = false}) {
-    // ถ้าเป็น FlashSale ไม่ต้องแสดง TabBar
-    // if (isFlashSale) {
-    //   return _buildPromotionList(
-    //       product['branch_details']['installment_plans_Flash_Sale']);
-    // }
-    // กรณีที่ไม่ใช่ Flash Sale แสดง TabBar
-    if (isFlashSale) {
-      return Column(
-        children: [
-          Container(
-            margin: EdgeInsets.symmetric(horizontal: 15.0),
-            child: TabBar(
-              controller: _tabController,
-              indicatorColor: Colors.orange.shade600, // A subtle grey indicator
-              indicatorWeight: 2, // Thin indicator line for a clean look
-              labelColor: Colors.orange, // Dark grey for the active tab text
-              unselectedLabelColor:
-                  Colors.grey.shade500, // Lighter grey for inactive tabs
-              labelStyle: TextStyle(
-                fontSize: 14, // Standard font size
-                fontWeight:
-                    FontWeight.normal, // No bold text for minimal effect
-              ),
-              unselectedLabelStyle: TextStyle(
-                fontSize: 14, // Same font size for consistency
-                fontWeight:
-                    FontWeight.normal, // Normal weight for unselected tabs
-              ),
-              indicatorSize: TabBarIndicatorSize
-                  .tab, // Ensure the indicator matches tab width
-              tabs: [
-                Tab(
-                  child: Text(
-                    'หลัก', // Main tab
-                    style: TextStyle(
-                      fontFamily:
-                          'Kanit', // Replace with your desired font family
-                      fontSize: 16, // Adjust font size as needed
-                      fontWeight: FontWeight.bold, // Optional: adjust weight
-                    ),
-                  ),
-                ),
-                Tab(
-                  child: Text(
-                    'รอง', // Secondary tab
-                    style: TextStyle(
-                      fontFamily:
-                          'Kanit', // Replace with your desired font family
-                      fontSize: 16, // Adjust font size as needed
-                      fontWeight: FontWeight.bold, // Optional: adjust weight
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            height: 300, // Adjust based on content
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildPromotionList(
-                    product['branch_details']['installment_plans_Flash_Sale']),
-                _buildPromotionList(product['branch_details']
-                    ['installment_plans_Flash_Sale_Second']),
-              ],
-            ),
-          ),
-        ],
-      );
-    } else {
-      return Column(
-        children: [
-          Container(
-            margin: EdgeInsets.symmetric(horizontal: 15.0),
-            child: TabBar(
-              controller: _tabController,
-              indicatorColor: Colors.orange.shade600, // A subtle grey indicator
-              indicatorWeight: 2, // Thin indicator line for a clean look
-              labelColor: Colors.orange, // Dark grey for the active tab text
-              unselectedLabelColor:
-                  Colors.grey.shade500, // Lighter grey for inactive tabs
-              labelStyle: TextStyle(
-                fontSize: 14, // Standard font size
-                fontWeight:
-                    FontWeight.normal, // No bold text for minimal effect
-              ),
-              unselectedLabelStyle: TextStyle(
-                fontSize: 14, // Same font size for consistency
-                fontWeight:
-                    FontWeight.normal, // Normal weight for unselected tabs
-              ),
-              indicatorSize: TabBarIndicatorSize
-                  .tab, // Ensure the indicator matches tab width
-              tabs: [
-                Tab(
-                  child: Text(
-                    'หลัก', // Main tab
-                    style: TextStyle(
-                      fontFamily:
-                          'Kanit', // Replace with your desired font family
-                      fontSize: 16, // Adjust font size as needed
-                      fontWeight: FontWeight.bold, // Optional: adjust weight
-                    ),
-                  ),
-                ),
-                Tab(
-                  child: Text(
-                    'รอง', // Secondary tab
-                    style: TextStyle(
-                      fontFamily:
-                          'Kanit', // Replace with your desired font family
-                      fontSize: 16, // Adjust font size as needed
-                      fontWeight: FontWeight.bold, // Optional: adjust weight
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            height: 300, // Adjust based on content
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildPromotionList(
-                    product['branch_details']['installment_plans_main']),
-                _buildPromotionList(
-                    product['branch_details']['installment_plans_second']),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-  }
-
-  Widget _buildVariantsSection(Map<String, dynamic> product) {
-    if (product['variants'] == null || product['variants'] is! List) {
-      return Text('ไม่มีตัวเลือกสินค้า', style: TextStyle(fontFamily: 'Kanit'));
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: (product['variants'] as List).map((variant) {
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 8.0),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8.0),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 4.0,
-                offset: const Offset(0, 1),
-              ),
-            ],
-            border: Border.all(
-              color: Colors.grey.shade300,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      variant['variant'] ?? '',
-                      style: TextStyle(
-                          fontFamily: 'Kanit', fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      'คงเหลือ: ${variant['remaining_qty'] ?? '-'} ชิ้น',
-                      style: TextStyle(fontFamily: 'Kanit', color: Colors.grey),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Barcode: ${variant['barcode'] ?? '-'}',
-                  style: TextStyle(fontFamily: 'Kanit', color: Colors.black),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Barcode BigC: ${variant['barcode_bigc'] ?? '-'}',
-                  style: TextStyle(fontFamily: 'Kanit', color: Colors.black),
-                ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildProductWarrantyAndProtection(Map<String, dynamic> product) {
-    // ตรวจสอบว่าเป็น Flash Sale หรือไม่
-    bool isFlashSale = product['branch_details'] != null &&
-        product['branch_details']['isFlashSale'] == true;
-
-    // เลือกโปรโมชั่นจาก Flash Sale หรือ Main ตามสถานะ isFlashSale
-    var promotions = isFlashSale
-        ? product['branch_details']['promotions_flash_sale']
-        : product['branch_details']['promotions_main'];
-
-    var promotionsData =
-        promotions != null && promotions.isNotEmpty ? promotions[0] : null;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white, // ทำให้การ์ดเป็นสีขาว
-        borderRadius: BorderRadius.circular(8.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4.0,
-            offset: const Offset(0, 1),
-          ),
-        ],
-        border: Border.all(
-          color: Colors.grey.shade300,
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.verified, size: 24, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text(
-                      'ประกัน:',
-                      style: TextStyle(
-                        fontFamily: 'Kanit',
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 4),
-                Text(
-                  promotionsData != null &&
-                          promotionsData['warranty2years'] != null
-                      ? promotionsData['warranty2years']
-                      : '-',
-                  style: TextStyle(fontFamily: 'Kanit', fontSize: 14),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.phonelink_erase, size: 24, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text(
-                      'ประกันจอแตก:',
-                      style: TextStyle(
-                        fontFamily: 'Kanit',
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 4),
-                Text(
-                  promotionsData != null &&
-                          promotionsData['brokenscreen'] != null
-                      ? promotionsData['brokenscreen']
-                      : '-',
-                  style: TextStyle(fontFamily: 'Kanit', fontSize: 14),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPromotionList(Map<String, dynamic> installmentPlans) {
-    List<Widget> promotionsList = [];
-
-    installmentPlans.forEach((percentage, value) {
-      var banks = value['banks'];
-
-      promotionsList.add(
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Text(
-            'ดอกเบี้ย: $percentage',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: Colors.black,
-              fontFamily: 'Kanit',
-            ),
-          ),
-        ),
-      );
-
-      final formatter = NumberFormat('#,##0'); // Formatter for number
-
-      promotionsList.add(
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 1,
-                child: Center(
-                  child: Text(
-                    '',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Kanit',
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 1,
-                child: Center(
-                  child: Text(
-                    'Code',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Kanit',
-                      color: Colors.grey[700],
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 1,
-                child: Center(
-                  child: Text(
-                    'เดือน',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Kanit',
-                      color: Colors.grey[700],
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 1,
-                child: Center(
-                  child: Text(
-                    'บาท/เดือน',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Kanit',
-                      color: Colors.grey[700],
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-
-      promotionsList.add(
-        Column(
-          children: banks.map<Widget>((bank) {
-            String code = bank['code']?.trim() ?? '-';
-            code = code.isEmpty ? '-' : code;
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 1,
-                            child: Align(
-                              alignment: Alignment.center,
-                              child: Column(
-                                children: [
-                                  Image.network(
-                                    'https://arnold.tg.co.th:3001${bank['image']['image']}',
-                                    height: 30,
-                                    fit: BoxFit.contain,
-                                    alignment: Alignment.centerLeft,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Icon(Icons.broken_image, size: 30);
-                                    },
-                                  ),
-                                  SizedBox(
-                                    height: 5,
-                                  ),
-                                  // เพิ่มชื่อธนาคารใต้ icon
-                                  Text(
-                                    bank['image']['fullname'] ?? '',
-                                    style: TextStyle(
-                                        color: Colors.black,
-                                        fontFamily: 'Kanit',
-                                        fontSize: 10),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 1,
-                            child: Center(
-                              child: Text(
-                                code,
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontFamily: 'Kanit',
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 1,
-                            child: Center(
-                              child: Text(
-                                bank['plans'][0]['months'] ?? '-',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontFamily: 'Kanit',
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 1,
-                            child: Center(
-                              child: Text(
-                                bank['plans'][0]['ppm'] != null
-                                    ? '${formatter.format(double.tryParse(bank['plans'][0]['ppm']) ?? 0)}'
-                                    : '-',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontFamily: 'Kanit',
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                for (var i = 1; i < bank['plans'].length; i++)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                            flex: 1, child: SizedBox.shrink()), // Placeholder
-                        Expanded(
-                            flex: 1, child: SizedBox.shrink()), // Placeholder
-                        Expanded(
-                          flex: 1,
-                          child: Center(
-                            child: Text(
-                              bank['plans'][i]['months'] ?? '-',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontFamily: 'Kanit',
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 1,
-                          child: Center(
-                            child: Text(
-                              bank['plans'][i]['ppm'] != null
-                                  ? '${formatter.format(double.tryParse(bank['plans'][i]['ppm']) ?? 0)}'
-                                  : '-',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontFamily: 'Kanit',
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            );
-          }).toList(),
-        ),
-      );
-
-      promotionsList.add(
-        Divider(
-          color: Colors.grey,
-          thickness: 0.2,
-          height: 20,
-        ),
-      );
-    });
-
-    if (promotionsList.isEmpty) {
-      promotionsList.add(
-        Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Center(
-            child: Text(
-              '-',
-              style: TextStyle(
-                fontSize: 14,
-                fontFamily: 'Kanit',
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Scrollbar(
-        thickness: 1,
-        child: SingleChildScrollView(child: Column(children: promotionsList)));
-  }
-
-  Widget _buildOptionSetList(Map<String, dynamic> product) {
-    bool isFlashSale = product['branch_details'] != null &&
-        product['branch_details']['isFlashSale'] == true;
-    var promotions = isFlashSale
-        ? product['branch_details']['promotions_flash_sale']
-        : product['branch_details']['promotions_main'];
-
-    var promotionData =
-        promotions != null && promotions.isNotEmpty ? promotions[0] : null;
-
-    if (promotionData == null) {
-      return Container(
-        margin: const EdgeInsets.symmetric(vertical: 8.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 4.0,
-              offset: const Offset(0, 1),
-            ),
-          ],
-          border: Border.all(
-            color: Colors.grey.shade300,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildOptionSetItem('ของแถม 1', '-'),
-              _buildOptionSetItem('ของแถม 2', '-'),
-              _buildOptionSetItem('ของแถม 3', '-'),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4.0,
-            offset: const Offset(0, 1),
-          ),
-        ],
-        border: Border.all(
-          color: Colors.grey.shade300,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildOptionSetItem(
-              'ของแถม 1',
-              promotionData['optionset1'] != null &&
-                      promotionData['optionset1'].toString().isNotEmpty
-                  ? promotionData['optionset1'].toString()
-                  : '-',
-            ),
-            _buildOptionSetItem(
-              'ของแถม 2',
-              promotionData['optionset2'] != null &&
-                      promotionData['optionset2'].toString().isNotEmpty
-                  ? promotionData['optionset2'].toString()
-                  : '-',
-            ),
-            _buildOptionSetItem(
-              'ของแถม 3',
-              promotionData['optionset3'] != null &&
-                      promotionData['optionset3'].toString().isNotEmpty
-                  ? promotionData['optionset3'].toString()
-                  : '-',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNoteData(Map<String, dynamic> product) {
-    bool isFlashSale = product['branch_details'] != null &&
-        product['branch_details']['isFlashSale'] == true;
-    var promotions = isFlashSale
-        ? product['branch_details']['promotions_flash_sale']
-        : product['branch_details']['promotions_main'];
-
-    var promotionData =
-        promotions != null && promotions.isNotEmpty ? promotions[0] : null;
-
-    if (promotionData == null) {
-      return Container(
-        width: MediaQuery.of(context).size.width,
-        margin: const EdgeInsets.symmetric(vertical: 8.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 4.0,
-              offset: const Offset(0, 1),
-            ),
-          ],
-          border: Border.all(
-            color: Colors.grey.shade300,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                  child: Text(
-                "-",
-                style: TextStyle(fontFamily: 'Kanit'),
-              )),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      width: MediaQuery.of(context).size.width,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4.0,
-            offset: const Offset(0, 1),
-          ),
-        ],
-        border: Border.all(
-          color: Colors.grey.shade300,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              promotionData['note_pm'] != null &&
-                      promotionData['note_pm'].toString().isNotEmpty
-                  ? promotionData['note_pm'].toString()
-                  : '-',
-              style: TextStyle(fontFamily: 'Kanit'),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNoteGiftBrand(Map<String, dynamic> product) {
-    bool isFlashSale = product['branch_details'] != null &&
-        product['branch_details']['isFlashSale'] == true;
-    var promotions = isFlashSale
-        ? product['branch_details']['promotions_flash_sale']
-        : product['branch_details']['promotions_main'];
-
-    var promotionData =
-        promotions != null && promotions.isNotEmpty ? promotions[0] : null;
-
-    if (promotionData == null) {
-      return Container(
-        width: MediaQuery.of(context).size.width,
-        margin: const EdgeInsets.symmetric(vertical: 8.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 4.0,
-              offset: const Offset(0, 1),
-            ),
-          ],
-          border: Border.all(
-            color: Colors.grey.shade300,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                  child: Text(
-                "-",
-                style: TextStyle(fontFamily: 'Kanit'),
-              )),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4.0,
-            offset: const Offset(0, 1),
-          ),
-        ],
-        border: Border.all(
-          color: Colors.grey.shade300,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            promotionData['tgfreegift'] != null &&
-                    promotionData['tgfreegift'].toString().isNotEmpty
-                ? Text(
-                    promotionData['tgfreegift']
-                        .toString(), // Align left when there's a value,
-                    textAlign: TextAlign.left,
-                    style: TextStyle(fontFamily: 'Kanit'))
-                : Center(
-                    child: Text(
-                      '-', // Center the text when the value is empty
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontFamily: 'Kanit'),
-                    ),
-                  )
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNoteTG(Map<String, dynamic> product) {
-    bool isFlashSale = product['branch_details'] != null &&
-        product['branch_details']['isFlashSale'] == true;
-    var promotions = isFlashSale
-        ? product['branch_details']['promotions_flash_sale']
-        : product['branch_details']['promotions_main'];
-
-    var promotionData =
-        promotions != null && promotions.isNotEmpty ? promotions[0] : null;
-
-    if (promotionData == null) {
-      return Container(
-        width: MediaQuery.of(context).size.width,
-        margin: const EdgeInsets.symmetric(vertical: 8.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 4.0,
-              offset: const Offset(0, 1),
-            ),
-          ],
-          border: Border.all(
-            color: Colors.grey.shade300,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                  child: Text(
-                "-",
-                style: TextStyle(fontFamily: 'Kanit'),
-              )),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4.0,
-            offset: const Offset(0, 1),
-          ),
-        ],
-        border: Border.all(
-          color: Colors.grey.shade300,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            promotionData['allbrandfreegift'] != null &&
-                    promotionData['allbrandfreegift'].toString().isNotEmpty
-                ? Text(promotionData['allbrandfreegift'].toString(),
-                    style: TextStyle(fontFamily: 'Kanit'))
-                : Center(
-                    child: Text(
-                      '-', // Center the text when the value is empty
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontFamily: 'Kanit'),
-                    ),
-                  )
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOptionSetItem(String title, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Kanit',
-              fontSize: 16,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              color: Colors.grey.shade700,
-              fontFamily: 'Kanit',
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPremiumTabBar() {
-    if (_premiumData.isEmpty || _premiumTabController == null) {
-      return Center(child: Text('-'));
-    }
-
-    return Column(
-      children: [
-        Align(
-          alignment: Alignment.centerLeft, // จัดตำแหน่ง TabBar ให้อยู่ทางซ้าย
-          child: TabBar(
-            controller:
-                _premiumTabController, // ใช้ premiumTabController สำหรับ Tab ของ premium
-            isScrollable: true,
-            indicatorColor: Colors.orange.shade600,
-            indicatorWeight: 2, // Thin indicator line for a clean look
-            labelColor: Colors.orange, // Dark grey for the active tab text
-            unselectedLabelColor:
-                Colors.grey.shade500, // Lighter grey for inactive tabs
-            labelStyle: TextStyle(
-              fontSize: 14, // Standard font size
-              fontWeight: FontWeight.normal, // No bold text for minimal effect
-            ),
-            unselectedLabelStyle: TextStyle(
-              fontSize: 14, // Same font size for consistency
-              fontWeight:
-                  FontWeight.normal, // Normal weight for unselected tabs
-            ),
-            indicatorSize: TabBarIndicatorSize
-                .tab, // Ensure the indicator matches tab width
-            tabs: _premiumData.map((group) {
-              return Tab(
-                child: Text(
-                  "กลุ่ม ${group['group_name']}" ?? '-',
-                  style: TextStyle(fontFamily: 'Kanit', fontSize: 14),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        SizedBox(
-          height: 300,
-          child: TabBarView(
-            controller:
-                _premiumTabController, // ใช้ premiumTabController สำหรับเนื้อหา Tab ของ premium
-            children: _premiumData.map((group) {
-              return _buildPremiumGroup(group);
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPremiumGroup(Map<String, dynamic> group) {
-    var products = group['products'] as List;
-
-    if (products.isEmpty) {
-      return Center(
-        child: Text(
-          '-',
-          style: TextStyle(fontFamily: 'Kanit', fontSize: 16),
-        ),
-      );
-    }
-
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 10.0),
-        child: Table(
-          border: TableBorder.symmetric(
-              outside: BorderSide(width: 0, color: Colors.grey.shade300)),
-          columnWidths: {
-            0: FlexColumnWidth(4),
-            1: FlexColumnWidth(6), // ใช้ FlexColumnWidth เพื่อแบ่งขนาดคอลัมน์
-          },
-          // border: TableBorder.all(color: Colors.grey.shade300),
-          children: [
-            TableRow(
-              decoration: BoxDecoration(color: Color(0xfffec5bb)),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Center(
-                    child: Text(
-                      'บาร์โค้ด',
-                      style: TextStyle(
-                        fontFamily: 'Kanit',
-                        //  fontWeight: FontWeight.bold
-                      ),
-                      textAlign: TextAlign.left,
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Center(
-                    child: Text(
-                      'ชื่อสินค้า',
-                      style: TextStyle(
-                        fontFamily: 'Kanit',
-                        // fontWeight: FontWeight.bold
-                      ),
-                      textAlign: TextAlign.left,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            for (int index = 0; index < products.length; index++)
-              TableRow(
-                decoration: BoxDecoration(
-                  color: index % 2 == 0
-                      ? Colors.white
-                      : Color.fromARGB(255, 250, 236, 225), // สลับสีระหว่างแถว
-                ),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(
-                      children: [
-                        SizedBox(width: 8),
-                        Text(
-                          products[index]['barcode'] ?? '-',
-                          style: TextStyle(fontSize: 12, fontFamily: 'Kanit'),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: SizedBox(
-                      width: MediaQuery.of(context).size.width *
-                          0.5, // แบ่งคอลัมน์ 50%
-                      child: Text(
-                        products[index]['product_name'] ?? '',
-                        style: TextStyle(fontSize: 12, fontFamily: 'Kanit'),
-                        softWrap: true,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
           ],
         ),
       ),
@@ -2206,6 +638,228 @@ class _IndexScreenState extends State<IndexScreen>
     }
   }
 
+  void _selectBranch(BuildContext context) {
+    TextEditingController searchController = TextEditingController();
+    List<Map<String, String>> filteredBranches =
+        List.from(user.branch_codes_area);
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+      ),
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            void _filterBranches() {
+              String searchText = searchController.text.toLowerCase();
+              setModalState(() {
+                filteredBranches = user.branch_codes_area.where((branch) {
+                  String branchName = branch["branch_name"]!.toLowerCase();
+                  String branchCode = branch["branch_code"]!.toLowerCase();
+                  return branchName.contains(searchText) ||
+                      branchCode.contains(searchText);
+                }).toList();
+              });
+            }
+
+            return GestureDetector(
+              onTap: () {
+                // เมื่อกดพื้นที่ว่าง จะพับ Keyboard ลง
+                FocusScope.of(context).unfocus();
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(20.0)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      height: 5,
+                      width: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // ช่องค้นหา
+                    Container(
+                      margin:
+                          const EdgeInsets.only(top: 16, left: 16, right: 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: searchController,
+                              inputFormatters: [
+                                LengthLimitingTextInputFormatter(50),
+                              ],
+                              decoration: InputDecoration(
+                                prefixIcon: Icon(Icons.search,
+                                    color: Colors.grey.shade400),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 8.0, horizontal: 20.0),
+                                hintText: 'ค้นหาสาขา',
+                                hintStyle: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontFamily: 'Kanit',
+                                ),
+                                fillColor: Colors.white,
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(25.0),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(25.0),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(25.0),
+                                ),
+                                isDense: true,
+                                suffixIcon: searchController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: Icon(Icons.clear,
+                                            color: Colors.grey.shade400),
+                                        onPressed: () {
+                                          setModalState(() {
+                                            searchController.clear();
+                                            _filterBranches(); // กรองข้อมูลใหม่
+                                          });
+                                        },
+                                      )
+                                    : null,
+                              ),
+                              onChanged: (value) {
+                                _filterBranches(); // กรองข้อมูลเมื่อพิมพ์
+                              },
+                              keyboardType: TextInputType.text,
+                              textInputAction: TextInputAction.search,
+                              style: const TextStyle(fontFamily: 'Kanit'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // แสดงจำนวนสาขาทั้งหมดที่กรองได้
+                    Align(
+                      alignment: Alignment.topRight, // ชิดซ้าย
+                      child: Text(
+                        'จำนวน ${filteredBranches.length} สาขา',
+                        style: TextStyle(
+                          fontFamily: 'Kanit',
+                          fontSize: 16,
+                          color: Colors.grey.shade600,
+                        ),
+                        textAlign: TextAlign.left, // ชิดซ้าย
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // รายการสาขา
+                    Expanded(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: filteredBranches.length,
+                        itemBuilder: (context, index) {
+                          var branch = filteredBranches[index];
+                          String branchCode = branch["branch_code"]!;
+                          String branchName = branch["branch_name"]!;
+                          bool isSelected = select_branch_code == branchCode;
+
+                          return GestureDetector(
+                            onTap: () async {
+                              setState(() {
+                                user.select_branch_code = branchCode;
+                                user.select_branch_name = branchName;
+                                select_branch_code = branchCode;
+                                select_branch_name = branchName;
+
+                                // รีเซ็ตสถานะการเลือกของแท็กทั้งหมด
+                                searchBranch.clear();
+                                for (var tag in tags) {
+                                  tag.isSelected = false;
+                                }
+                              });
+
+                              // ดึงข้อมูลสินค้ามาใหม่หลังจากเลือกสาขา
+                              await _loadInitialData();
+                              Navigator.pop(context); // ปิด BottomSheet
+                            },
+                            child: Card(
+                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              elevation: 0, // ไม่มีเงาเพื่อความเรียบง่าย
+                              shape: RoundedRectangleBorder(
+                                side: BorderSide(
+                                  color: Colors.grey.shade300, // ใช้สีเทาอ่อน
+                                  width: 1, // เส้นขอบบาง
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              color: Colors.white, // พื้นหลังสีขาว
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 12, horizontal: 16),
+                                leading: Icon(
+                                  Icons.storefront,
+                                  color: isSelected
+                                      ? Colors.orangeAccent
+                                      : Colors.grey[400],
+                                  size: 24, // ไอคอนเล็กลงเพื่อความเรียบง่าย
+                                ),
+                                title: Text(
+                                  branchName,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    color: isSelected
+                                        ? Colors.black
+                                        : Colors.grey[800],
+                                    fontFamily: 'Prompt',
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  branchCode,
+                                  style: TextStyle(
+                                    color: Colors.grey[500],
+                                    fontFamily: 'Prompt',
+                                  ),
+                                ),
+                                trailing: isSelected
+                                    ? const Icon(Icons.check_circle,
+                                        color: Colors.orangeAccent)
+                                    : null,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     int totalProducts = _productData.length;
@@ -2214,226 +868,867 @@ class _IndexScreenState extends State<IndexScreen>
 
     return GestureDetector(
       onTap: () {
-        FocusScope.of(context).requestFocus(new FocusNode());
+        FocusScope.of(context).unfocus();
       },
       child: Scaffold(
         backgroundColor: Colors.white,
         body: SmartRefresher(
           controller: _refreshController,
           onRefresh: _onRefresh,
-          child: Container(
-            child: Column(
-              children: [
-                HeaderHome(),
-                const SizedBox(height: 5),
-                SizedBox(height: 10),
-                Container(
-                  margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: searchBranch,
-                          focusNode: FocusNode(),
-                          inputFormatters: [
-                            LengthLimitingTextInputFormatter(50),
-                          ],
-                          decoration: InputDecoration(
-                            prefixIcon: Icon(Icons.search),
-                            contentPadding: const EdgeInsets.symmetric(
-                                vertical: 8.0, horizontal: 20.0),
-                            hintText: 'ชื่อสินค้า',
-                            hintStyle: TextStyle(
-                                color: Colors.grey.shade400,
-                                fontFamily: 'Kanit'),
-                            fillColor: Colors.white,
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(25.0),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade300,
+          child: CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                pinned: true, // ติดอยู่ด้านบน
+                floating: false, // ไม่ลอย
+                expandedHeight: 150.0,
+                backgroundColor: Colors.orange,
+                flexibleSpace: LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints constraints) {
+                    final double scrollPercentage =
+                        ((constraints.maxHeight - kToolbarHeight) /
+                                (150.0 - kToolbarHeight))
+                            .clamp(0.0, 1.0);
+
+                    return FlexibleSpaceBar(
+                      // เมื่อยังไม่สกอ ให้แสดงข้อความและเลือกสาขาตามปกติ
+                      title: scrollPercentage < 0.9
+                          ? Align(
+                              alignment: Alignment
+                                  .bottomLeft, // จัดตำแหน่งให้อยู่ล่างซ้ายของพื้นที่
+                              child: Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 16.0,
+                                ), // เพิ่ม padding ที่ด้านล่าง
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment
+                                      .spaceBetween, // ไว้เพื่อให้ไอคอนอยู่ขวาสุด
+                                  crossAxisAlignment: CrossAxisAlignment
+                                      .end, // จัดให้อยู่ด้านล่าง
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment
+                                          .start, // จัดตำแหน่งให้อยู่ซ้าย
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(
+                                              Icons
+                                                  .person, // ไอคอนแสดงถึงผู้ใช้งาน
+                                              size: 26,
+                                              color: Colors.white,
+                                            ),
+                                            const SizedBox(
+                                                width:
+                                                    8), // ระยะห่างระหว่างไอคอนกับชื่อ
+                                            Text(
+                                              '$fullname',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                                fontFamily: 'Kanit',
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(
+                                            height:
+                                                4), // ระยะห่างระหว่างชื่อกับชื่อสาขา
+                                        Text(
+                                          '$select_branch_name', // ชื่อสาขา
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: Colors
+                                                .white70, // ใช้สีขาวที่อ่อนลง
+                                            fontFamily: 'Kanit',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    GestureDetector(
+                                      onTap: () => _selectBranch(
+                                          context), // เรียก _selectBranch เมื่อกด
+                                      child: const Row(
+                                        children: [
+                                          Icon(
+                                            Icons.store, // ไอคอนร้านค้า
+                                            size: 24,
+                                            color: Colors.white,
+                                          ),
+                                          Icon(
+                                            Icons.arrow_drop_down, // ลูกศรชี้ลง
+                                            color: Colors.white,
+                                            size: 24,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(25.0),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade300,
-                              ),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(25.0),
-                            ),
-                            isDense: true,
-                            suffixIcon: searchBranch.text.isNotEmpty
-                                ? IconButton(
-                                    icon: Icon(Icons.clear),
-                                    onPressed: () {
-                                      setState(() {
-                                        searchBranch.clear();
-                                        _filterProducts();
-                                      });
-                                    },
-                                  )
-                                : null,
+                            )
+                          : null, // ไม่แสดงข้อความบน AppBar เมื่อเลื่อนสุด
+
+                      background: Container(
+                        padding: const EdgeInsets.all(16.0),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFFFFA726), Color(0xFFFF8C00)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          onChanged: (value) {
-                            _filterProducts();
-                          },
-                          keyboardType: TextInputType.text,
-                          textInputAction: TextInputAction.search,
-                          style: TextStyle(fontFamily: 'Kanit'),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Spacer(),
+                            if (scrollPercentage >
+                                0.9) // แสดงข้อความ Hi! และสาขาตามปกติ
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons
+                                            .person, // ใช้ไอคอนที่สื่อถึงการทักทาย
+                                        size: 26, // กำหนดขนาดไอคอน
+                                        color: Colors
+                                            .white, // สีของไอคอนให้เข้ากับพื้นหลัง
+                                      ),
+                                      const SizedBox(
+                                          width:
+                                              8), // เว้นระยะห่างระหว่างไอคอนกับชื่อ
+                                      Text(
+                                        '$fullname',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                          fontFamily: 'Kanit',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (branch_codes_area.isNotEmpty &&
+                                      branch_codes_area.length > 1)
+                                    GestureDetector(
+                                      onTap: () => _selectBranch(context),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              '$select_branch_name ($select_branch_code)',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.white,
+                                                fontFamily: 'Kanit',
+                                              ),
+                                            ),
+                                          ),
+                                          const Icon(
+                                            Icons.arrow_drop_down,
+                                            color: Colors.white,
+                                            size: 30,
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  else
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            '$select_branch_name ($select_branch_code)',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              color: Colors.white,
+                                              fontFamily: 'Kanit',
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                ],
+                              ),
+                            // Spacer(),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-                const SizedBox(height: 5),
-                Container(
-                  margin: EdgeInsets.only(left: 15.0),
-                  height: 35,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: tags.length,
-                    itemBuilder: (context, index) {
-                      Tag tag = tags[index];
-                      return GestureDetector(
-                        onTap: () => _onTagClick(tag),
-                        child: Container(
-                          padding: const EdgeInsets.only(left: 10, right: 3),
-                          margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                          decoration: BoxDecoration(
-                            color: tag.isSelected
-                                ? Colors.grey.shade100
-                                : tag.color,
-                            borderRadius: BorderRadius.circular(20.0),
-                          ),
-                          child: Row(
-                            children: [
-                              Text(
-                                tag.name,
-                                style: TextStyle(
-                                    color: tag.isSelected
-                                        ? Colors.grey.shade400
-                                        : Colors.white,
-                                    fontFamily: 'Kanit',
-                                    fontSize: 12),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                width: 30,
-                                padding: EdgeInsets.all(1),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    tag.quantity.toString(),
-                                    style: TextStyle(
-                                      color: tag.isSelected
-                                          ? Colors.grey.shade400
-                                          : Colors.black,
-                                      fontSize:
-                                          tag.quantity.toString().length > 3
-                                              ? 8
-                                              : 10,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
+              ),
+
+              // Product Incoming Section
+              SliverToBoxAdapter(
+                child: CarouselSlider(
+                  carouselController: _carouselController,
+                  options: CarouselOptions(
+                    height: 110,
+                    viewportFraction: 1.0,
+                    enableInfiniteScroll: false,
+                    onPageChanged: (index, reason) {
+                      setState(() {
+                        _currentPage = index; // Update the current page index
+                      });
+                    },
+                  ),
+                  items: List.generate(
+                    (menuItems.length / 4).ceil(),
+                    (pageIndex) {
+                      int start = pageIndex * 4;
+                      int end = start + 4;
+                      end = end > menuItems.length ? menuItems.length : end;
+                      return buildMenuPage(
+                          context, menuItems.sublist(start, end));
                     },
                   ),
                 ),
-                const SizedBox(height: 16),
-                isLoading
-                    ? _buildShimmerEffect()
-                    : Padding(
-                        padding: const EdgeInsets.only(left: 16.0, bottom: 8.0),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'จำนวนสินค้าทั้งหมด: $totalProducts รายการ',
-                            style: const TextStyle(
-                                fontSize: 16, fontFamily: 'Kanit'),
+                // Dot indicator
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.center,
+                //   children: List.generate(
+                //     (menuItems.length / 4).ceil(),
+                //     (index) => Container(
+                //       width: 8.0,
+                //       height: 8.0,
+                //       margin:
+                //           EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0),
+                //       decoration: BoxDecoration(
+                //         shape: BoxShape.circle,
+                //         color: _currentPage == index
+                //             ? Color(0xffFF8C00) // Active dot color
+                //             : Colors.grey, // Inactive dot color
+                //       ),
+                //     ),
+                //   ),
+                // ),
+              ),
+
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _StickyHeaderDelegate(
+                  child: Container(
+                    color: Colors.white, // พื้นหลังสีขาว
+                    padding:
+                        // const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                        const EdgeInsets.only(left: 16, top: 5, right: 16),
+                    child: Row(
+                      children: [
+                        // Expanded(
+                        //   child: TextFormField(
+                        //     controller: searchBranch,
+                        //     focusNode: FocusNode(),
+                        //     inputFormatters: [
+                        //       LengthLimitingTextInputFormatter(50),
+                        //     ],
+                        //     decoration: InputDecoration(
+                        //       prefixIcon: const Icon(Icons.search),
+                        //       contentPadding: const EdgeInsets.symmetric(
+                        //           vertical: 8.0, horizontal: 20.0),
+                        //       hintText: 'ชื่อสินค้า',
+                        //       hintStyle: TextStyle(
+                        //           color: Colors.grey.shade400,
+                        //           fontFamily: 'Kanit'),
+                        //       fillColor: Colors.white,
+                        //       filled:
+                        //           true, // เพื่อให้พื้นหลังของ search box เป็นสีขาว
+                        //       focusedBorder: OutlineInputBorder(
+                        //         borderRadius: BorderRadius.circular(25.0),
+                        //         borderSide: BorderSide(
+                        //           color: Colors.grey.shade300,
+                        //         ),
+                        //       ),
+                        //       enabledBorder: OutlineInputBorder(
+                        //         borderRadius: BorderRadius.circular(25.0),
+                        //         borderSide: BorderSide(
+                        //           color: Colors.grey.shade300,
+                        //         ),
+                        //       ),
+                        //       border: OutlineInputBorder(
+                        //         borderRadius: BorderRadius.circular(25.0),
+                        //       ),
+                        //       isDense: true,
+                        //       suffixIcon: searchBranch.text.isNotEmpty
+                        //           ? IconButton(
+                        //               icon: const Icon(Icons.clear),
+                        //               onPressed: () {
+                        //                 setState(() {
+                        //                   searchBranch.clear();
+                        //                   _filterProducts();
+                        //                 });
+                        //               },
+                        //             )
+                        //           : null,
+                        //     ),
+                        //     onChanged: (value) {
+                        //       _filterProducts();
+                        //     },
+                        //     keyboardType: TextInputType.text,
+                        //     textInputAction: TextInputAction.search,
+                        //     style: const TextStyle(fontFamily: 'Kanit'),
+                        //   ),
+                        // ),
+
+                        Expanded(
+                          child: TextFormField(
+                            controller: searchBranch,
+                            focusNode: FocusNode(),
+                            inputFormatters: [
+                              LengthLimitingTextInputFormatter(50),
+                            ],
+                            decoration: InputDecoration(
+                              prefixIcon: const Icon(Icons.search),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 8.0, horizontal: 20.0),
+                              hintText: 'ชื่อสินค้า',
+                              hintStyle: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontFamily: 'Kanit'),
+                              fillColor: Colors.white,
+                              filled:
+                                  true, // เพื่อให้พื้นหลังของ search box เป็นสีขาว
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(25.0),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(25.0),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(25.0),
+                              ),
+                              isDense: true,
+                              suffixIcon: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // ปุ่ม Clear
+                                  if (searchBranch.text.isNotEmpty)
+                                    IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: () {
+                                        setState(() {
+                                          searchBranch.clear();
+                                          _filterProducts();
+                                        });
+                                      },
+                                    ),
+                                  // ปุ่ม Scan
+                                  IconButton(
+                                    icon: const Icon(Icons.qr_code_scanner),
+                                    onPressed: () async {
+                                      // เปิดหน้า QRScannerPage
+                                      final result = await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => QRScannerPage(),
+                                        ),
+                                      );
+
+                                      // ตรวจสอบผลลัพธ์จากการสแกน QR Code
+                                      if (result != null && result is String) {
+                                        setState(() {
+                                          searchBranch.text = result;
+                                          _filterProducts();
+                                        });
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                            onChanged: (value) {
+                              _filterProducts();
+                            },
+                            keyboardType: TextInputType.text,
+                            textInputAction: TextInputAction.search,
+                            style: const TextStyle(fontFamily: 'Kanit'),
                           ),
-                        ),
-                      ),
-                isLoading
-                    ? _buildShimmerEffect()
-                    : Expanded(
-                        child: _productData.isEmpty
-                            ? Center(
-                                child: Text('ไม่พบข้อมูลสินค้า',
-                                    style: TextStyle(fontFamily: 'Kanit')))
-                            : ListView.builder(
-                                padding: EdgeInsets.zero,
-                                itemCount: _productData.length,
-                                itemBuilder: (context, index) {
-                                  var product = _productData[index];
-                                  return GestureDetector(
-                                    onTap: () => _showProductDetails(product),
-                                    child: Card(
-                                      color: Colors.white,
-                                      elevation: 1,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Tag List Header
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _StickyHeaderDelegate(
+                  height: 50,
+                  child: Container(
+                    color: Colors.white,
+                    margin: const EdgeInsets.only(
+                        left: 15.0, top: 0.0, bottom: 0.0),
+                    padding: const EdgeInsets.only(top: 5, bottom: 10),
+                    height: 40,
+                    child: ValueListenableBuilder<List<Tag>>(
+                      valueListenable: tagsNotifier,
+                      builder: (context, tags, _) {
+                        return ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: tags.length,
+                          itemBuilder: (context, index) {
+                            Tag tag = tags[index];
+                            return GestureDetector(
+                              onTap: () => _onTagClick(tag),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 4.0),
+                                padding:
+                                    const EdgeInsets.only(left: 10, right: 3),
+                                height: tag.isSelected ? 40 : 35,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20.0),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.grey.withOpacity(0.2),
+                                      spreadRadius: 1,
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                  border: Border.all(
+                                    color: tag.isSelected
+                                        ? const Color(0xFF0077c2)
+                                        : Colors.grey.shade300,
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Stack(
+                                  alignment: Alignment.centerRight,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 35),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          AnimatedSwitcher(
+                                            duration: const Duration(
+                                                milliseconds: 300),
+                                            transitionBuilder:
+                                                (child, animation) {
+                                              return ScaleTransition(
+                                                  scale: animation,
+                                                  child: child);
+                                            },
+                                            child: tag.isSelected
+                                                ? Icon(
+                                                    Icons.check,
+                                                    key: ValueKey(
+                                                        'check_${tag.name}'),
+                                                    size: 14,
+                                                    color:
+                                                        const Color(0xFF0077c2),
+                                                  )
+                                                : const SizedBox.shrink(),
+                                          ),
+                                          SizedBox(
+                                              width: tag.isSelected ? 3 : 0),
+                                          Text(
+                                            tag.name,
+                                            style: TextStyle(
+                                              color: tag.isSelected
+                                                  ? const Color(0xFF0077c2)
+                                                  : Colors.black45,
+                                              fontFamily: 'Kanit',
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      margin: EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 8),
-                                      child: Padding(
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 16, vertical: 8),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              product['product_name'] ?? '',
-                                              style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontFamily: 'Kanit'),
+                                    ),
+                                    Positioned(
+                                      right: 0,
+                                      child: Container(
+                                        width: 25,
+                                        height: 25,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: tag.isSelected
+                                              ? const Color(0xFF0077c2)
+                                                  .withOpacity(0.7)
+                                              : Colors.grey.shade300,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color:
+                                                  Colors.grey.withOpacity(0.3),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
                                             ),
-                                            SizedBox(height: 4),
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    'ราคา: ${product['price'] != null && product['price'] != '0.00' ? formatter.format(double.parse(product['price'])) + ' บาท' : '-'}',
-                                                    style: TextStyle(
-                                                        fontFamily: 'Kanit'),
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  child: Text(
-                                                    'คงเหลือ: ${quantityFormatter.format(product['all_qty'] ?? 0)} ชิ้น',
-                                                    style: TextStyle(
-                                                        fontFamily: 'Kanit'),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            SizedBox(height: 8),
                                           ],
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            tag.quantity.toString(),
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: tag.quantity
+                                                          .toString()
+                                                          .length >
+                                                      3
+                                                  ? 6
+                                                  : 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  );
-                                },
+                                  ],
+                                ),
                               ),
-                      ),
-              ],
-            ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _StickyHeaderDelegate(
+                  child: Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 5.0),
+                    child: isLoading
+                        ? Row(
+                            children: [
+                              _buildShimmerEffect(),
+                              const Text(
+                                'กำลังโหลดข้อมูลสินค้า...',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Kanit',
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          )
+                        : ValueListenableBuilder<int>(
+                            valueListenable: totalProductsNotifier,
+                            builder: (context, totalProducts, _) {
+                              return Text(
+                                'พบสินค้า $totalProducts รายการ',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Kanit',
+                                  color: Colors.black54,
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                  height: 40,
+                ),
+              ),
+
+              // Product List
+              // SliverList(
+              //   delegate: SliverChildBuilderDelegate(
+              //     (context, index) {
+              //       print('index: $index');
+              //       print('productData: $_productData');
+              //       if (isLoading) {
+              //         print("Loading");
+              //         return _buildShimmerEffect();
+              //       } else if (_productData.isEmpty) {
+              //         print("No data");
+              //         return const Center(
+              //           child: Text('ไม่พบข้อมูลสินค้า',
+              //               style: TextStyle(fontFamily: 'Kanit')),
+              //         );
+              //       } else {
+              //         print("Data found");
+              //         var product = _productData[index];
+              //         return GestureDetector(
+              //           onTap: () => _showProductDetails(product),
+              //           child: Card(
+              //             color: Colors.white,
+              //             elevation: 1,
+              //             shape: RoundedRectangleBorder(
+              //               borderRadius: BorderRadius.circular(8),
+              //             ),
+              //             margin: const EdgeInsets.symmetric(
+              //                 horizontal: 16, vertical: 8),
+              //             child: Padding(
+              //               padding: const EdgeInsets.symmetric(
+              //                   horizontal: 16, vertical: 8),
+              //               child: Column(
+              //                 crossAxisAlignment: CrossAxisAlignment.start,
+              //                 children: [
+              //                   Text(
+              //                     product['product_name'] ?? '',
+              //                     style: const TextStyle(
+              //                         fontSize: 16, fontFamily: 'Kanit'),
+              //                   ),
+              //                   const SizedBox(height: 4),
+              //                   Row(
+              //                     mainAxisAlignment:
+              //                         MainAxisAlignment.spaceBetween,
+              //                     children: [
+              //                       Expanded(
+              //                         child: Text(
+              //                           'ราคา ${product['price'] != null && product['price'] != '0.00' ? formatter.format(double.parse(product['price'])) + ' บาท' : '-'}',
+              //                           style: const TextStyle(
+              //                               fontFamily: 'Kanit'),
+              //                         ),
+              //                       ),
+              //                       Text(
+              //                         'คงเหลือ ${quantityFormatter.format(product['all_qty'] ?? 0)} ชิ้น',
+              //                         style:
+              //                             const TextStyle(fontFamily: 'Kanit'),
+              //                       ),
+              //                     ],
+              //                   ),
+              //                   const SizedBox(height: 8),
+              //                 ],
+              //               ),
+              //             ),
+              //           ),
+              //         );
+              //       }
+              //     },
+              //     childCount: _productData.length,
+              //   ),
+              // ),
+
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    if (isLoading) {
+                      // แสดง shimmer effect ขณะโหลดข้อมูล
+                      return _buildShimmerEffect();
+                    } else if (_productData.isEmpty) {
+                      // แสดงข้อความ "ไม่พบข้อมูลสินค้า" เมื่อไม่มีข้อมูล
+                      return Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.sentiment_dissatisfied, // เปลี่ยนเป็นไอคอนที่คุณต้องการ
+                              size: 80,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'ไม่พบข้อมูลสินค้า',
+                              style: TextStyle(
+                                fontFamily: 'Kanit',
+                                fontSize: 18,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'ลองค้นหาด้วยคำอื่น หรือตรวจสอบคำค้นหา',
+                              style: TextStyle(
+                                fontFamily: 'Kanit',
+                                fontSize: 14,
+                                color: Colors.grey.shade500,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      // แสดงรายการสินค้าเมื่อมีข้อมูล
+                      var product = _productData[index];
+                      return GestureDetector(
+                        onTap: () => _showProductDetails(product),
+                        child: Card(
+                          color: Colors.white,
+                          elevation: 1,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  product['product_name'] ?? '',
+                                  style: const TextStyle(
+                                      fontSize: 16, fontFamily: 'Kanit'),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'ราคา ${product['price'] != null && product['price'] != '0.00' ? formatter.format(double.parse(product['price'])) + ' บาท' : '-'}',
+                                        style: const TextStyle(
+                                            fontFamily: 'Kanit'),
+                                      ),
+                                    ),
+                                    Text(
+                                      'คงเหลือ ${quantityFormatter.format(product['all_qty'] ?? 0)} ชิ้น',
+                                      style:
+                                          const TextStyle(fontFamily: 'Kanit'),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  childCount: isLoading || _productData.isNotEmpty
+                      ? _productData.length
+                      : 1,
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
+  Widget buildMenuPage(BuildContext context, List<Map<String, dynamic>> items) {
+    return GridView.count(
+      crossAxisCount: 4,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      children: items.map((item) {
+        return InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => item['screen']),
+            );
+          },
+          child: Container(
+            // decoration: BoxDecoration(
+            //   color: Colors.white,
+            //   borderRadius: BorderRadius.circular(8),
+            //   boxShadow: [
+            //     BoxShadow(
+            //       color: Colors.grey.withOpacity(0.2),
+            //       spreadRadius: 1,
+            //       blurRadius: 4,
+            //       offset: Offset(0, 2),
+            //     ),
+            //   ],
+            // ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(
+                      12), // Reduced padding for more space
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFFEEEEEE)
+                        .withOpacity(0.2), // Light gray background color
+                  ),
+                  child: Image.asset(
+                    item['image'],
+                    width: 28, // Reduced icon size for better fit
+                    height: 28,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Expanded(
+                  // Wrap Text with Expanded to avoid overflow
+                  child: Text(
+                    item['label'],
+                    textAlign: TextAlign.center,
+                    maxLines: 2, // Allow up to 2 lines of text
+                    overflow: TextOverflow
+                        .ellipsis, // Show ellipsis if text is too long
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontFamily: 'Kanit',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // Widget _buildShimmerEffect() {
+  //   return Expanded(
+  //     child: ListView.builder(
+  //       padding: EdgeInsets.zero,
+  //       itemCount: 5,
+  //       itemBuilder: (context, index) {
+  //         return Shimmer.fromColors(
+  //           baseColor: Colors.grey.shade300,
+  //           highlightColor: Colors.grey.shade100,
+  //           child: Card(
+  //             color: Colors.white,
+  //             margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+  //             child: Padding(
+  //               padding: EdgeInsets.all(16),
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   Container(
+  //                     width: double.infinity,
+  //                     height: 16,
+  //                     color: Colors.white,
+  //                   ),
+  //                   SizedBox(height: 8),
+  //                   Container(
+  //                     width: double.infinity,
+  //                     height: 16,
+  //                     color: Colors.white,
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ),
+  //         );
+  //       },
+  //     ),
+  //   );
+  // }
+
   Widget _buildShimmerEffect() {
-    return Expanded(
+    return Container(
+      height: 100.0, // กำหนดความสูงเองให้เหมาะสมแทนการใช้ Expanded
       child: ListView.builder(
         padding: EdgeInsets.zero,
         itemCount: 5,
@@ -2443,9 +1738,9 @@ class _IndexScreenState extends State<IndexScreen>
             highlightColor: Colors.grey.shade100,
             child: Card(
               color: Colors.white,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Padding(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -2454,7 +1749,7 @@ class _IndexScreenState extends State<IndexScreen>
                       height: 16,
                       color: Colors.white,
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
                       height: 16,
@@ -2470,7 +1765,7 @@ class _IndexScreenState extends State<IndexScreen>
     );
   }
 
-  void _onRefresh() async {
+  Future<void> _onRefresh() async {
     await _loadInitialData();
     _refreshController.refreshCompleted();
   }
@@ -2487,4 +1782,31 @@ class Tag {
       required this.quantity,
       required this.color,
       this.isSelected = false});
+}
+
+class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height; // เพิ่มตัวแปรสำหรับตั้งค่าความสูงที่เหมาะสม
+
+  _StickyHeaderDelegate({required this.child, this.height = 55.0});
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      height: height, // กำหนดความสูงที่แน่นอน
+      child: child,
+    );
+  }
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  double get minExtent => height;
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
+    return false; // กำหนดให้ไม่ต้อง rebuild เมื่อไม่มีการเปลี่ยนแปลง
+  }
 }

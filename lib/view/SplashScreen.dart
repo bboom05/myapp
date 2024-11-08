@@ -18,7 +18,6 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
-  late Widget initialRoute = const HomeView();
 
   @override
   void initState() {
@@ -35,70 +34,76 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    checkLoginStatus().then((_) {
-      _controller.addStatusListener((status) {
-        if (status == AnimationStatus.completed) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => initialRoute,
-            ),
-          );
-        }
-      });
-    });
+    checkLoginStatus();
   }
 
   Future<void> checkLoginStatus() async {
     var user = User();
     await user.init();
+    // print('user: ${user.isLogin}');
+    // print('user: ${user.employee_code}');
+    // print('user: ${user.brance_code}');
+    // print('user: ${user.brance_name}');
+    // print('user: ${user.email}');
+    // print('user: ${user.fullname}');
+    // print('user: ${user.uid}');
+    // print('user: ${user.password}');
+
     if (user.isLogin) {
-      await fetchBranchData(user.employee_code);
-      initialRoute = const HomeView();
+      await fetchBranchData(user.employee_code, user.password);
+      navigateToPage(HomeView()); // Navigate to HomeView if logged in
     } else {
-      initialRoute = const LoginView();
-    }
-    setState(() {});
-  }
-
-  Future<void> fetchBranchData(String employeeId) async {
-    var usernameKey = Info().userAPI;
-    var passwordKey = Info().passAPI;
-    final encodedCredentials =
-        base64Encode(utf8.encode('$usernameKey:$passwordKey'));
-    final response = await http.post(
-      Uri.parse(Info()
-          .getBranchData), // Update this with your actual API URL for fetching branch data
-      headers: {
-        'Authorization': 'Basic $encodedCredentials',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'employee_code': employeeId}),
-    );
-
-    if (response.statusCode == 200) {
-      List<dynamic> employees = json.decode(response.body);
-      var employee = findEmployeeByCode(employees, employeeId);
-      // print("employee ${employee}");
-      if (employee != null) {
-        var user = User();
-        await user.init();
-        user.brance_code = employee['brance_code'];
-        user.brance_name = employee['brance_name'];
-      }
-    } else {
-      print('Failed to fetch branch data with status: ${response.statusCode}');
+      navigateToPage(
+          const LoginView()); // Navigate to LoginView if not logged in
     }
   }
 
-  Map<String, dynamic>? findEmployeeByCode(
-      List<dynamic> employees, String employeeCode) {
+  Future<void> fetchBranchData(String employeeId, String password) async {
     try {
-      return employees
-          .firstWhere((emp) => emp['employee_code'] == employeeCode);
+      final response = await http.post(
+        Uri.parse(Info().userLoginAuth), // API URL
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'employee_code': employeeId,
+          'get_branch': '1',
+          'pass_user': password
+        }),
+      );
+      // print('response: ${response.body}');
+      // print('response: ${response.statusCode}');
+      // print('response: ${response.headers}');
+
+      if (response.statusCode == 200) {
+        Map<String, dynamic> employee = json.decode(response.body);
+        if (employee["status"] == "success") {
+          var user = User();
+          await user.init();
+          user.brance_code = employee['branch_code_odoo'];
+          user.brance_name = employee['branch_code_odoo_name'];
+          user.select_branch_code = employee['branch_code_odoo'];
+          user.select_branch_name = employee['branch_code_odoo_name'];
+        }
+      } else {
+        print(
+            'Failed to fetch branch data with status: ${response.statusCode}');
+      }
     } catch (e) {
-      print('Error finding employee: $e');
-      return null;
+      print('Error during branch data fetch: $e');
     }
+  }
+
+  void navigateToPage(Widget page) {
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => page,
+          ),
+        );
+      }
+    });
   }
 
   @override
@@ -128,16 +133,15 @@ class _SplashScreenState extends State<SplashScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.asset(
-                  'assets/images/logo_splash.png', // เพิ่ม path ของโลโก้ของคุณ
+                  'assets/images/logo_splash.png', // โลโก้ของแอป
                   width: 200,
-                  // height: 200,
                 ),
                 const SizedBox(height: 5),
                 const Text(
                   'Super App',
                   style: TextStyle(
                     fontSize: 18,
-                    color: Color(0xFFFF8C00), // สีข้อความเป็นสีดำ
+                    color: Color(0xFFFF8C00),
                     fontFamily: 'Kanit',
                   ),
                 ),
