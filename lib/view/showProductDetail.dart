@@ -71,6 +71,7 @@ class _ShowProductDetailState extends State<ShowProductDetail>
     Map<String, dynamic>? installment = {};
     final formatter = NumberFormat('#,##0.00');
     final data = product['branch_details'];
+
     // ตรวจสอบ selectedType และดึงข้อมูล promotion ตามประเภทที่เลือก
     if (selectedType == 'flash_sale') {
       promotion = data['promotions_flash_sale'];
@@ -656,7 +657,7 @@ class _ShowProductDetailState extends State<ShowProductDetail>
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: Text(
-            'ดอกเบี้ย: $percentage',
+            'ดอกเบี้ย: $percentage%',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
@@ -734,98 +735,101 @@ class _ShowProductDetailState extends State<ShowProductDetail>
         ),
       );
 
-      promotionsList.add(
-        Column(
-          children: banks.map<Widget>((bank) {
-            String code = bank['code']?.trim() ?? '-';
-            code = code.isEmpty ? '-' : code;
-            var ppm = bank['plans'];
-            print('ppm: $ppm');
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 1,
-                            child: Align(
-                              alignment: Alignment.center,
-                              child: Column(
-                                children: [
-                                  Image.network(
-                                    'https://arnold.tg.co.th:3001${bank['image']['image']}',
-                                    height: 30,
-                                    fit: BoxFit.contain,
-                                    alignment: Alignment.centerLeft,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Icon(Icons.broken_image, size: 30);
-                                    },
-                                  ),
-                                  SizedBox(
-                                    height: 5,
-                                  ),
-                                  // เพิ่มชื่อธนาคารใต้ icon
-                                  Text(
-                                    bank['image']['fullname'] ?? '',
-                                    style: TextStyle(
-                                        color: Colors.black,
-                                        fontFamily: 'Kanit',
-                                        fontSize: 10),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 1,
-                            child: Center(
-                              child: Text(
-                                code,
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontFamily: 'Kanit',
+      promotionsList.add(Column(
+        children: banks.map<Widget>((bank) {
+          String code = bank['code']?.trim() ?? '-';
+          code = code.isEmpty ? '-' : code;
+
+          var plans = bank['plans'];
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 1,
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: Column(
+                              children: [
+                                Image.network(
+                                  'https://arnold.tg.co.th:3001${bank['image']['image']}',
+                                  height: 30,
+                                  fit: BoxFit.contain,
+                                  alignment: Alignment.centerLeft,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Icon(Icons.broken_image, size: 30);
+                                  },
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 1,
-                            child: Center(
-                              child: Text(
-                                bank['plans'][0]['months'] ?? '-',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontFamily: 'Kanit',
+                                const SizedBox(height: 5),
+                                Text(
+                                  bank['image']['fullname'] ?? '',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontFamily: 'Kanit',
+                                    fontSize: 10,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
+                              ],
                             ),
                           ),
-                          Expanded(
-                            flex: 1,
-                            child: Center(
-                                child: Text(
-                              bank['plans'][0]['ppm'] != null
-                                  ? '${formatter.format(bank['plans'][0]['ppm'] is String ? double.tryParse(bank['plans'][0]['ppm']) ?? 0 : bank['plans'][0]['ppm'])}'
+                        ),
+                        Expanded(
+                          flex: 1,
+                          child: Center(
+                            child: Text(
+                              code,
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontFamily: 'Kanit',
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 1,
+                          child: Center(
+                            child: Text(
+                              plans != null && plans.isNotEmpty
+                                  ? plans[0]['months'] ?? '-'
                                   : '-',
                               style: TextStyle(
                                 color: Colors.black,
                                 fontFamily: 'Kanit',
                               ),
                               textAlign: TextAlign.center,
-                            )),
+                            ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                        Expanded(
+                          flex: 1,
+                          child: Center(
+                            child: Text(
+                              plans != null && plans.isNotEmpty
+                                  ? (plans[0]['ppm'] != null
+                                      ? '${formatter.format(plans[0]['ppm'] is String ? double.tryParse(plans[0]['ppm']) ?? 0 : plans[0]['ppm'])}'
+                                      : '-')
+                                  : '-',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontFamily: 'Kanit',
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                for (var i = 1; i < bank['plans'].length; i++)
+              ),
+              if (plans != null && plans.length > 1)
+                for (var i = 1; i < plans.length; i++)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
                     child: Row(
@@ -838,7 +842,7 @@ class _ShowProductDetailState extends State<ShowProductDetail>
                           flex: 1,
                           child: Center(
                             child: Text(
-                              bank['plans'][i]['months'] ?? '-',
+                              plans[i]['months'] ?? '-',
                               style: TextStyle(
                                 color: Colors.black,
                                 fontFamily: 'Kanit',
@@ -850,25 +854,25 @@ class _ShowProductDetailState extends State<ShowProductDetail>
                         Expanded(
                           flex: 1,
                           child: Center(
-                              child: Text(
-                            bank['plans'][i]['ppm'] != null
-                                ? '${formatter.format(bank['plans'][i]['ppm'] is String ? double.tryParse(bank['plans'][i]['ppm']) ?? 0 : bank['plans'][i]['ppm'])}'
-                                : '-',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontFamily: 'Kanit',
+                            child: Text(
+                              plans[i]['ppm'] != null
+                                  ? '${formatter.format(plans[i]['ppm'] is String ? double.tryParse(plans[i]['ppm']) ?? 0 : plans[i]['ppm'])}'
+                                  : '-',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontFamily: 'Kanit',
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
-                          )),
+                          ),
                         ),
                       ],
                     ),
                   ),
-              ],
-            );
-          }).toList(),
-        ),
-      );
+            ],
+          );
+        }).toList(),
+      ));
 
       promotionsList.add(
         Divider(
@@ -915,7 +919,7 @@ class _ShowProductDetailState extends State<ShowProductDetail>
   }
 
   Widget _buildPremiumTabBar() {
-    print('Premium Data: $_premiumData');
+    // print('Premium Data: $_premiumData');
     if (_premiumData.isEmpty || _premiumTabController == null) {
       return Center(child: Text('-'));
     }
@@ -1072,6 +1076,8 @@ class _ShowProductDetailState extends State<ShowProductDetail>
       final encodedCredentials =
           base64Encode(utf8.encode('$usernameKey:$passwordKey'));
 
+      print('user.select_branch_code : ${user.select_branch_code}');
+      print('productName : $productName');
       final uri =
           Uri.parse(Info().getProductAndPromotion).replace(queryParameters: {
         'product_name': productName,
@@ -1089,6 +1095,9 @@ class _ShowProductDetailState extends State<ShowProductDetail>
         var product = dataJson['products'][0];
         var premium = dataJson['premium'];
         print('product: $product');
+        // print(
+        //     'product["branch_details"]: ${product['branch_details']['promotions_main']}');
+        // product['branch_details']
         // print('premium: $premium');
 
         if (premium != null && premium is List && premium.isNotEmpty) {
@@ -1117,6 +1126,7 @@ class _ShowProductDetailState extends State<ShowProductDetail>
   Widget _buildNoteData(List<dynamic>? promotions) {
     var promotion =
         promotions != null && promotions.isNotEmpty ? promotions[0] : null;
+    print('promotion: $promotion');
 
     if (promotion == null ||
         promotion['note_pm'] == null ||
@@ -1534,7 +1544,6 @@ class NotFoundPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-           
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,

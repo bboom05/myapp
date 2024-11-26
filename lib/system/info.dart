@@ -27,9 +27,9 @@ class Info {
   String getProductAndPromotion = '${_baseUrlUAT}datauat'; // ดึงข้อมูลสินค้า และโปรโมชั่น
   String checkPromotion = '${_baseUrlUAT}getDatauatpromotion'; // ดึงข้อมูลสินค้า และโปรโมชั่น
   String productIncoming = '${_baseUrlUAT}getDatproductincoming'; // ดึงข้อมูลสินค้า Incomming Intransit
-  String userLoginAuth = '${_baseUrlAuth}api-auth-user/login'; // Login authen
-  String userSignup = '${_baseUrlAuth}api-auth-user/signup'; // Signup
-  String contactus = '${_baseUrlAuth}api-contact/contact'; // Signup
+  String userLoginAuth = '${_baseUrlAuth}api-auth-uat/login'; // Login authen
+  String userSignup = '${_baseUrlAuth}api-auth-uat/signup'; // Signup
+  String contactus = '${_baseUrlAuth}api-contact/contact'; // Contact
   String logActivity = '${_baseUrlLogApi}php_log/save_log.php'; // บันทึก Log การใช้งาน 
     
 

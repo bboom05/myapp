@@ -395,8 +395,9 @@ class _IndexScreenState extends State<IndexScreen>
           base64Encode(utf8.encode('$usernameKey:$passwordKey'));
       final uri = Uri.parse(Info().checkPromotion).replace(queryParameters: {
         'product_name': productName,
-        'warehouse': brance_code,
+        'warehouse': select_branch_code,
       });
+      print('branch_code: $select_branch_code');
       final response = await http.get(uri, headers: {
         'Authorization': 'Basic $encodedCredentials',
         'Content-Type': 'application/json',
@@ -1529,7 +1530,8 @@ class _IndexScreenState extends State<IndexScreen>
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.sentiment_dissatisfied, // เปลี่ยนเป็นไอคอนที่คุณต้องการ
+                              Icons
+                                  .sentiment_dissatisfied, // เปลี่ยนเป็นไอคอนที่คุณต้องการ
                               size: 80,
                               color: Colors.grey.shade400,
                             ),

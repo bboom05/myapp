@@ -389,7 +389,7 @@ class _ProductIncomingState extends State<ProductIncoming> {
                   children: [
                     Expanded(
                       child: Text(
-                        'สาขา: $select_branch_name',
+                        '$select_branch_name',
                         style: const TextStyle(
                           fontSize: 16,
                           fontFamily: 'Kanit',
@@ -470,10 +470,37 @@ class _ProductIncomingState extends State<ProductIncoming> {
                 child: isLoading
                     ? _buildShimmerEffect()
                     : _filteredProductIncomingData.isEmpty
-                        ? const Center(
-                            child: Text('ไม่พบข้อมูลสินค้า',style: TextStyle(
-                              fontFamily: 'Kanit',fontSize: 16,color: Colors.grey,
-                            ),),
+                        ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons
+                                    .sentiment_dissatisfied, // เปลี่ยนเป็นไอคอนที่คุณต้องการ
+                                size: 80,
+                                color: Colors.grey.shade500,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'ไม่พบข้อมูลสินค้า',
+                                style: TextStyle(
+                                  fontFamily: 'Kanit',
+                                  fontSize: 18,
+                                  color: Colors.grey.shade500,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'ลองค้นหาด้วยคำอื่น หรือตรวจสอบคำค้นหา',
+                                style: TextStyle(
+                                  fontFamily: 'Kanit',
+                                  fontSize: 14,
+                                  color: Colors.grey.shade500,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           )
                         : ListView.builder(
                             padding: const EdgeInsets.symmetric(vertical: 8),
