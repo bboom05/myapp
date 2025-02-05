@@ -35,10 +35,17 @@ class _LoginViewState extends State<LoginView> {
 
   Future<void> postLogin(http.Client client, String jsonMap) async {
     print('jsonMap: $jsonMap');
+    var usernameKey = Info().userAPIProd;
+    var passwordKey = Info().passAPIProd;
+
+    final encodedCredentials =
+        base64Encode(utf8.encode('$usernameKey:$passwordKey'));
+
     try {
       final response = await client.post(
         Uri.parse(Info().userLoginAuth),
         headers: {
+          'Authorization': 'Basic $encodedCredentials',
           'Content-Type': 'application/json',
         },
         body: jsonMap,

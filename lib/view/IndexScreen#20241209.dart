@@ -429,7 +429,7 @@ class _IndexScreenState extends State<IndexScreen>
         branchDetails['promotions_flash_sale'].isNotEmpty) {
       availablePromotions.add({
         'type': 'flash_sale',
-        'text': 'Best Price',
+        'text': 'Flash Sale',
         'icon': Icons.flash_on,
         'color': Colors.red,
       });
@@ -440,7 +440,7 @@ class _IndexScreenState extends State<IndexScreen>
         branchDetails['promotions_flash_sale_second'].isNotEmpty) {
       availablePromotions.add({
         'type': 'flash_sale_secondary',
-        'text': 'Best Price รอง',
+        'text': 'Flash Sale รอง',
         'icon': Icons.flash_auto,
         'color': Colors.orange,
       });
@@ -1388,7 +1388,6 @@ class _IndexScreenState extends State<IndexScreen>
       padding: const EdgeInsets.only(left: 16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           _buildUserInfo(),
           GestureDetector(

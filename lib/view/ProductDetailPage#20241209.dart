@@ -1,17 +1,11 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../model/loading.dart';
-import '../model/user.dart';
-import '../system/info.dart';
-import 'package:http/http.dart' as http;
 
 class ProductDetailPage extends StatefulWidget {
   final List<Map<String, dynamic>> productData;
   final List<Map<String, dynamic>> premiumData;
-
   final String selectedType;
 
   const ProductDetailPage({
@@ -32,20 +26,6 @@ class _ProductDetailPageState extends State<ProductDetailPage>
   TabController? _premiumTabController;
   final NumberFormat formatter = NumberFormat('#,##0.00');
   bool isLoading = true;
-
-  Map<String, dynamic>? productDetails;
-  List<Map<String, dynamic>> _premiumData = [];
-  var user = User();
-  bool isLogin = false;
-  var selectedType = "";
-  var fullname = "";
-  var branch_code = "";
-  var brance_name = "";
-  var select_branch_code = "";
-  var select_branch_name = "";
-  // productDetails
-  var _productDetails = {};
-
   Map<int, bool> showAllLotsMap = {}; // สถานะสำหรับแต่ละ variant
   @override
   void initState() {
@@ -53,47 +33,16 @@ class _ProductDetailPageState extends State<ProductDetailPage>
     _tabController = TabController(length: 2, vsync: this);
     _tabControllerContent = TabController(length: 2, vsync: this);
 
-    // if (widget.premiumData.isNotEmpty) {
-    //   _premiumTabController =
-    //       TabController(length: widget.premiumData.length, vsync: this);
-    // }
-
-    // เรียกใช้งาน getUsers() และโหลดข้อมูลสินค้า
-    _initializeData();
-
-    // จำลองการโหลดข้อมูล
-    // Future.delayed(Duration(seconds: 1), () {
-    //   setState(() {
-    //     isLoading =
-    //         false; // เปลี่ยนสถานะการโหลดข้อมูลเป็น false เมื่อข้อมูลโหลดเสร็จ
-    //   });
-    // });
-  }
-
-  Future<void> _initializeData() async {
-    await getUsers();
-    if (widget.productData.isNotEmpty) {
-      await _fetchProductDetails(widget.productData[0]['product_name']);
+    if (widget.premiumData.isNotEmpty) {
+      _premiumTabController =
+          TabController(length: widget.premiumData.length, vsync: this);
     }
-    setState(() {
-      isLoading = false;
-    });
-  }
-
-  Future<void> getUsers() async {
-    await user.init();
-    setState(() {
-      isLogin = user.isLogin;
-      fullname = user.fullname;
-      branch_code = user.brance_code;
-      brance_name = user.brance_name;
-      select_branch_code = user.select_branch_code;
-      select_branch_name = user.select_branch_name;
-      selectedType = widget.selectedType;
-      // print('selectedType: $selectedType');
-      // print('branch_code: $branch_code');
-      // print('select_branch_code: $select_branch_code');
-      // print('select_branch_name: $select_branch_name');
+    // จำลองการโหลดข้อมูล
+    Future.delayed(Duration(seconds: 1), () {
+      setState(() {
+        isLoading =
+            false; // เปลี่ยนสถานะการโหลดข้อมูลเป็น false เมื่อข้อมูลโหลดเสร็จ
+      });
     });
   }
 
@@ -105,60 +54,6 @@ class _ProductDetailPageState extends State<ProductDetailPage>
     super.dispose();
   }
 
-  Future<void> _fetchProductDetails(String productName) async {
-    try {
-      var usernameKey = Info().userAPIProd;
-      var passwordKey = Info().passAPIProd;
-
-      final encodedCredentials =
-          base64Encode(utf8.encode('$usernameKey:$passwordKey'));
-
-      print('user.select_branch_code : ${user.select_branch_code}');
-      print('productName : $productName');
-      final uri =
-          Uri.parse(Info().getProductAndPromotion).replace(queryParameters: {
-        'product_name': productName,
-        'warehouse': user.select_branch_code,
-      });
-
-      final response = await http.get(uri, headers: {
-        'Authorization': 'Basic $encodedCredentials',
-        'Content-Type': 'application/json',
-      });
-      print('response.statusCode: ${response.statusCode}');
-      if (response.statusCode == 200) {
-        var dataJson = json.decode(response.body);
-        print('dataJson: $dataJson');
-        var product = dataJson['products'][0];
-        var premium = dataJson['premium'];
-        if (premium != null && premium is List && premium.isNotEmpty) {
-          setState(() {
-            _premiumData = List<Map<String, dynamic>>.from(premium);
-            _premiumTabController =
-                TabController(length: _premiumData.length, vsync: this);
-          });
-        }
-
-        //   setState(() {
-        //     isLoading =
-        //         false; // เปลี่ยนสถานะการโหลดข้อมูลเป็น false เมื่อข้อมูลโหลดเสร็จ
-        //   });
-
-        setState(() {
-          productDetails = product;
-          isLoading = false;
-        });
-      } else {
-        throw Exception('Failed to load product details');
-      }
-    } catch (error) {
-      print('Error fetching product details: $error');
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (widget.productData.isEmpty) {
@@ -168,11 +63,8 @@ class _ProductDetailPageState extends State<ProductDetailPage>
     }
 
     // ข้อมูลสินค้า
-    // final productDetails =
-    //     widget.productData.isNotEmpty ? widget.productData[0] : null;
-
-    // productDetails =
-    //     _fetchProductDetails(widget.productData[0]['product_name']); // แก้ตรงนี้ให้หน่อย
+    final productDetails =
+        widget.productData.isNotEmpty ? widget.productData[0] : null;
 
     // ข้อมูลของแถม
     final _premiumData = widget.premiumData;
@@ -184,14 +76,8 @@ class _ProductDetailPageState extends State<ProductDetailPage>
         iconTheme: const IconThemeData(
           color: Colors.white, // เปลี่ยนสีไอคอน
         ),
-        title: const Text(
-          'รายละเอียดสินค้า',
-          style: TextStyle(
-            fontFamily: 'Kanit',
-            color: Colors.white,
-            fontWeight: FontWeight.w300, // ใช้ตัวอักษรแบบบาง
-          ),
-        ),
+        title: Text(productDetails?['product_name'] ?? '',
+            style: const TextStyle(color: Colors.white)),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -214,8 +100,8 @@ class _ProductDetailPageState extends State<ProductDetailPage>
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildBlockData(productDetails!, _premiumData,
-                              selectedType), // แก้ตรงนี้ให้หน่อย
+                          _buildBlockData(
+                              productDetails!, _premiumData, selectedType),
                         ]),
                   )
                 : Center(child: Text('ไม่พบรายละเอียดสินค้า')),
@@ -495,40 +381,37 @@ class _ProductDetailPageState extends State<ProductDetailPage>
   }
 
   Widget _buildPremiumTabBar() {
-    // ตรวจสอบว่า _premiumData มีข้อมูลหรือไม่
-    if (_premiumData.isEmpty || _premiumTabController == null) {
-      return Center(
-        child: Text(
-          '-',
-          style: TextStyle(fontFamily: 'Kanit', fontSize: 16),
-        ),
-      );
+    if (widget.premiumData.isEmpty || _premiumTabController == null) {
+      return Center(child: Text('-'));
     }
 
     return Column(
       children: [
         Align(
-          alignment: Alignment.centerLeft,
+          alignment: Alignment.centerLeft, // จัดตำแหน่ง TabBar ให้อยู่ทางซ้าย
           child: TabBar(
-            controller: _premiumTabController,
-            isScrollable: true,
+            controller:
+                _premiumTabController, // ใช้ premiumTabController สำหรับ Tab ของ premium
+            isScrollable: true, // ทำให้ Tab เลื่อนได้หากมีหลายแท็บ
             indicatorColor: Colors.orange.shade600,
-            indicatorWeight: 2,
-            labelColor: Colors.orange,
-            unselectedLabelColor: Colors.grey.shade500,
+            indicatorWeight: 2, // Thin indicator line for a clean look
+            labelColor: Colors.orange, // สีของแท็บที่ถูกเลือก
+            unselectedLabelColor:
+                Colors.grey.shade500, // สีของแท็บที่ไม่ได้ถูกเลือก
             labelStyle: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.normal,
+              fontSize: 14, // ขนาดตัวอักษรของแท็บที่เลือก
+              fontWeight: FontWeight.normal, // ไม่ต้องการให้ตัวหนา
             ),
             unselectedLabelStyle: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.normal,
+              fontSize: 14, // ขนาดตัวอักษรของแท็บที่ไม่ได้เลือก
+              fontWeight: FontWeight.normal, // น้ำหนักตัวอักษรปกติ
             ),
-            indicatorSize: TabBarIndicatorSize.tab,
-            tabs: _premiumData.map((group) {
+            indicatorSize: TabBarIndicatorSize
+                .tab, // ให้ Indicator ของแท็บตรงกับขนาดของแท็บ
+            tabs: widget.premiumData.map((group) {
               return Tab(
                 child: Text(
-                  "กลุ่ม ${group['group_name'] ?? '-'}",
+                  "กลุ่ม ${group['group_name']}" ?? '-', // ชื่อกลุ่มของพรีเมียม
                   style: TextStyle(fontFamily: 'Kanit', fontSize: 14),
                 ),
               );
@@ -536,11 +419,13 @@ class _ProductDetailPageState extends State<ProductDetailPage>
           ),
         ),
         SizedBox(
-          height: 300,
+          height: 300, // กำหนดขนาดความสูงสำหรับเนื้อหา
           child: TabBarView(
-            controller: _premiumTabController,
-            children: _premiumData.map((group) {
-              return _buildPremiumGroup(group);
+            controller:
+                _premiumTabController, // ใช้ premiumTabController สำหรับเนื้อหาในแต่ละแท็บ
+            children: widget.premiumData.map((group) {
+              return _buildPremiumGroup(
+                  group); // เรียกใช้ฟังก์ชันเพื่อสร้างเนื้อหาแต่ละกลุ่ม
             }).toList(),
           ),
         ),
@@ -565,24 +450,27 @@ class _ProductDetailPageState extends State<ProductDetailPage>
         padding: const EdgeInsets.only(top: 10.0),
         child: Table(
           border: TableBorder.symmetric(
-            outside: BorderSide(width: 0, color: Colors.grey.shade300),
-          ),
-          columnWidths: const {
+              outside: BorderSide(width: 0, color: Colors.grey.shade300)),
+          columnWidths: {
             0: FlexColumnWidth(4),
-            1: FlexColumnWidth(6),
+            1: FlexColumnWidth(6), // ใช้ FlexColumnWidth เพื่อแบ่งขนาดคอลัมน์
           },
+          // border: TableBorder.all(color: Colors.grey.shade300),
           children: [
-            // Header
             TableRow(
+              // decoration: BoxDecoration(color: Color(0xfffec5bb)),
               decoration: BoxDecoration(color: Colors.blueAccent[400]),
+
               children: [
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Center(
                     child: Text(
                       'บาร์โค้ด',
-                      style:
-                          TextStyle(fontFamily: 'Kanit', color: Colors.white),
+                      style: TextStyle(fontFamily: 'Kanit', color: Colors.white
+                          //  fontWeight: FontWeight.bold
+                          ),
+                      textAlign: TextAlign.left,
                     ),
                   ),
                 ),
@@ -591,34 +479,46 @@ class _ProductDetailPageState extends State<ProductDetailPage>
                   child: Center(
                     child: Text(
                       'ชื่อสินค้า',
-                      style:
-                          TextStyle(fontFamily: 'Kanit', color: Colors.white),
+                      style: TextStyle(fontFamily: 'Kanit', color: Colors.white
+                          // fontWeight: FontWeight.bold
+                          ),
+                      textAlign: TextAlign.left,
                     ),
                   ),
                 ),
               ],
             ),
-            // Products
             for (int index = 0; index < products.length; index++)
               TableRow(
                 decoration: BoxDecoration(
-                  color: index % 2 == 0
-                      ? Colors.white
-                      : Color.fromARGB(255, 217, 231, 252),
-                ),
+                    color: index % 2 == 0
+                        ? Colors.white
+                        : Color.fromARGB(255, 217, 231, 252)
+                    // : Color.fromARGB(255, 250, 236, 225), // สลับสีระหว่างแถว
+                    ),
                 children: [
                   Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      products[index]['barcode'] ?? '-',
-                      style: TextStyle(fontSize: 12, fontFamily: 'Kanit'),
+                    child: Row(
+                      children: [
+                        SizedBox(width: 8),
+                        Text(
+                          products[index]['barcode'] ?? '-',
+                          style: TextStyle(fontSize: 12, fontFamily: 'Kanit'),
+                        ),
+                      ],
                     ),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      products[index]['product_name'] ?? '-',
-                      style: TextStyle(fontSize: 12, fontFamily: 'Kanit'),
+                    child: SizedBox(
+                      width: MediaQuery.of(context).size.width *
+                          0.5, // แบ่งคอลัมน์ 50%
+                      child: Text(
+                        products[index]['product_name'] ?? '',
+                        style: TextStyle(fontSize: 12, fontFamily: 'Kanit'),
+                        softWrap: true,
+                      ),
                     ),
                   ),
                 ],
@@ -628,6 +528,8 @@ class _ProductDetailPageState extends State<ProductDetailPage>
       ),
     );
   }
+
+  
 
   Widget _buildVariantsSection(Map<String, dynamic> product) {
     if (product['variants'] == null || product['variants'] is! List) {
@@ -947,6 +849,296 @@ class _ProductDetailPageState extends State<ProductDetailPage>
     );
   }
 
+  // Widget _buildPromotionList(Map<String, dynamic> installmentPlans) {
+  //   List<Widget> promotionsList = [];
+
+  //   installmentPlans.forEach((percentage, value) {
+  //     var banks = value['banks'];
+
+  //     promotionsList.add(
+  //       Padding(
+  //         padding: const EdgeInsets.symmetric(vertical: 8.0),
+  //         child: Text(
+  //           'ดอกเบี้ย: $percentage',
+  //           style: TextStyle(
+  //             fontWeight: FontWeight.bold,
+  //             fontSize: 16,
+  //             color: Colors.black,
+  //             fontFamily: 'Kanit',
+  //           ),
+  //         ),
+  //       ),
+  //     );
+
+  //     final formatter = NumberFormat('#,##0'); // Formatter for number
+
+  //     promotionsList.add(
+  //       Padding(
+  //         padding: const EdgeInsets.symmetric(vertical: 8.0),
+  //         child: Row(
+  //           children: [
+  //             Expanded(
+  //               flex: 1,
+  //               child: Center(
+  //                 child: Text(
+  //                   '',
+  //                   style: TextStyle(
+  //                     fontWeight: FontWeight.bold,
+  //                     fontFamily: 'Kanit',
+  //                     color: Colors.grey[700],
+  //                   ),
+  //                 ),
+  //               ),
+  //             ),
+  //             Expanded(
+  //               flex: 1,
+  //               child: Center(
+  //                 child: Text(
+  //                   'Code',
+  //                   style: TextStyle(
+  //                     fontWeight: FontWeight.bold,
+  //                     fontFamily: 'Kanit',
+  //                     color: Colors.grey[700],
+  //                   ),
+  //                   textAlign: TextAlign.center,
+  //                 ),
+  //               ),
+  //             ),
+  //             Expanded(
+  //               flex: 1,
+  //               child: Center(
+  //                 child: Text(
+  //                   'เดือน',
+  //                   style: TextStyle(
+  //                     fontWeight: FontWeight.bold,
+  //                     fontFamily: 'Kanit',
+  //                     color: Colors.grey[700],
+  //                   ),
+  //                   textAlign: TextAlign.center,
+  //                 ),
+  //               ),
+  //             ),
+  //             Expanded(
+  //               flex: 1,
+  //               child: Center(
+  //                 child: Text(
+  //                   'บาท/เดือน',
+  //                   style: TextStyle(
+  //                     fontWeight: FontWeight.bold,
+  //                     fontFamily: 'Kanit',
+  //                     color: Colors.grey[700],
+  //                   ),
+  //                   textAlign: TextAlign.center,
+  //                 ),
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     );
+
+  //     promotionsList.add(
+  //       Column(
+  //         children: banks.map<Widget>((bank) {
+  //           String code = bank['code']?.trim() ?? '-';
+  //           code = code.isEmpty ? '-' : code;
+  //           return Column(
+  //             children: [
+  //               Padding(
+  //                 padding: const EdgeInsets.symmetric(vertical: 8.0),
+  //                 child: Column(
+  //                   children: [
+  //                     Row(
+  //                       children: [
+  //                         Expanded(
+  //                           flex: 1,
+  //                           child: Align(
+  //                             alignment: Alignment.center,
+  //                             child: Column(
+  //                               children: [
+  //                                 Image.network(
+  //                                   'https://arnold.tg.co.th:3001${bank['image']['image']}',
+  //                                   height: 30,
+  //                                   fit: BoxFit.contain,
+  //                                   alignment: Alignment.centerLeft,
+  //                                   errorBuilder: (context, error, stackTrace) {
+  //                                     return Icon(Icons.broken_image, size: 30);
+  //                                   },
+  //                                 ),
+  //                                 SizedBox(
+  //                                   height: 5,
+  //                                 ),
+  //                                 // เพิ่มชื่อธนาคารใต้ icon
+  //                                 Text(
+  //                                   bank['image']['fullname'] ?? '',
+  //                                   style: TextStyle(
+  //                                       color: Colors.black,
+  //                                       fontFamily: 'Kanit',
+  //                                       fontSize: 10),
+  //                                   textAlign: TextAlign.center,
+  //                                 ),
+  //                               ],
+  //                             ),
+  //                           ),
+  //                         ),
+  //                         Expanded(
+  //                           flex: 1,
+  //                           child: Center(
+  //                             child: Text(
+  //                               code,
+  //                               style: TextStyle(
+  //                                 color: Colors.black,
+  //                                 fontFamily: 'Kanit',
+  //                               ),
+  //                               textAlign: TextAlign.center,
+  //                             ),
+  //                           ),
+  //                         ),
+  //                         Expanded(
+  //                           flex: 1,
+  //                           child: Center(
+  //                             child: Text(
+  //                               bank['plans'][0]['months'] ?? '-',
+  //                               style: TextStyle(
+  //                                 color: Colors.black,
+  //                                 fontFamily: 'Kanit',
+  //                               ),
+  //                               textAlign: TextAlign.center,
+  //                             ),
+  //                           ),
+  //                         ),
+  //                         Expanded(
+  //                           flex: 1,
+  //                           child: Center(
+  //                               child: Text(
+  //                             bank['plans'][0]['ppm'] != null
+  //                                 ? '${formatter.format(bank['plans'][0]['ppm'] is String ? double.tryParse(bank['plans'][0]['ppm']) ?? 0 : bank['plans'][0]['ppm'])}'
+  //                                 : '-',
+  //                             style: TextStyle(
+  //                               color: Colors.black,
+  //                               fontFamily: 'Kanit',
+  //                             ),
+  //                             textAlign: TextAlign.center,
+  //                           )
+  //                               // Text(
+  //                               //   bank['plans'][0]['ppm'] != null
+  //                               //       ? '${formatter.format(double.tryParse(bank['plans'][0]['ppm']) ?? 0)}'
+  //                               //       : '-',
+  //                               //   style: TextStyle(
+  //                               //     color: Colors.black,
+  //                               //     fontFamily: 'Kanit',
+  //                               //   ),
+  //                               //   textAlign: TextAlign.center,
+  //                               // ),
+  //                               ),
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+  //               for (var i = 1; i < bank['plans'].length; i++)
+  //                 // print('bank: ${bank['plans'][i]}');
+  //                 Padding(
+  //                   padding: const EdgeInsets.symmetric(vertical: 8.0),
+  //                   child: Row(
+  //                     children: [
+  //                       Expanded(
+  //                           flex: 1, child: SizedBox.shrink()), // Placeholder
+  //                       Expanded(
+  //                           flex: 1, child: SizedBox.shrink()), // Placeholder
+  //                       Expanded(
+  //                         flex: 1,
+  //                         child: Center(
+  //                           child: Text(
+  //                             bank['plans'][i]['months'] ?? '-',
+  //                             style: TextStyle(
+  //                               color: Colors.black,
+  //                               fontFamily: 'Kanit',
+  //                             ),
+  //                             textAlign: TextAlign.center,
+  //                           ),
+  //                         ),
+  //                       ),
+  //                       Expanded(
+  //                         flex: 1,
+  //                         child: Center(
+  //                             child: Text(
+  //                           bank['plans'][i]['ppm'] != null
+  //                               ? '${formatter.format(bank['plans'][i]['ppm'] is String ? double.tryParse(bank['plans'][i]['ppm']) ?? 0 : bank['plans'][i]['ppm'])}'
+  //                               : '-',
+  //                           style: TextStyle(
+  //                             color: Colors.black,
+  //                             fontFamily: 'Kanit',
+  //                           ),
+  //                           textAlign: TextAlign.center,
+  //                         )
+
+  //                             // Text(
+  //                             //   bank['plans'][i]['ppm'] != null
+  //                             //       ? '${formatter.format(double.tryParse(bank['plans'][i]['ppm']) ?? 0)}'
+  //                             //       : '-',
+  //                             //   style: TextStyle(
+  //                             //     color: Colors.black,
+  //                             //     fontFamily: 'Kanit',
+  //                             //   ),
+  //                             //   textAlign: TextAlign.center,
+  //                             // ),
+  //                             ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //             ],
+  //           );
+  //         }).toList(),
+  //       ),
+  //     );
+
+  //     promotionsList.add(
+  //       Divider(
+  //         color: Colors.grey,
+  //         thickness: 0.2,
+  //         height: 20,
+  //       ),
+  //     );
+  //   });
+
+  //   if (promotionsList.isEmpty) {
+  //     promotionsList.add(
+  //       Padding(
+  //         padding: const EdgeInsets.all(20.0),
+  //         child: Center(
+  //           child: Text(
+  //             '-',
+  //             style: TextStyle(
+  //               fontSize: 14,
+  //               fontFamily: 'Kanit',
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //     );
+  //   }
+
+  //   return ConstrainedBox(
+  //     constraints: BoxConstraints(
+  //       maxHeight: 400.0, // ความสูงสูงสุดที่ต้องการ
+  //       minHeight: promotionsList.isEmpty
+  //           ? 50.0
+  //           : 100.0, // ความสูงน้อยสุด ถ้าไม่มีข้อมูลจะเป็น 50, มีข้อมูลขั้นต่ำเป็น 100
+  //     ),
+  //     child: Scrollbar(
+  //       thickness: 1,
+  //       child: SingleChildScrollView(
+  //         child: Column(
+  //           children: promotionsList,
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _buildPromotionList(Map<String, dynamic> installmentPlans) {
     List<Widget> promotionsList = [];
 
@@ -974,7 +1166,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Text(
-              'ดอกเบี้ย: $percentage%',
+              'ดอกเบี้ย: $percentage',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -1057,7 +1249,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
             children: banks.map<Widget>((bank) {
               String code = bank['code']?.trim() ?? '-';
               var plans = bank['plans'] ?? [];
-
+ 
               return Column(
                 children: [
                   Padding(

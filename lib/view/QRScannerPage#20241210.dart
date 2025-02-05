@@ -113,6 +113,21 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
     return null;
   }
 
+  // Future<Map<String, dynamic>?> getQr(String strQr) async {
+  //   Uri uri = Uri.parse(strQr);
+  //   String qrId = uri.queryParameters['qr_id'] ?? '';
+  //   print('qrId: $qrId');
+  //   print('select_branch_code: $select_branch_code');
+
+  //   Map<String, String> map = {
+  //     "qr_id": qrId,
+  //     "branch_code": select_branch_code,
+  //     "type": "app"
+  //   };
+  //   var body = json.encode(map);
+  //   return await fetchProductDetail(http.Client(), body);
+  // }
+
   Future<Map<String, dynamic>?> getQr(String strQr) async {
     Uri uri = Uri.parse(strQr);
     String qrId = uri.queryParameters['qr_id'] ?? '';
@@ -130,6 +145,25 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
     return response ?? {}; // คืนค่าว่างถ้า response เป็น null
   }
 
+  // Navigate to Promotion Selection Page
+  // void _navigateToPromotionSelectionPage(
+  //     List<dynamic> products, List<dynamic> premiumData) {
+  //   if (products.isEmpty) {
+  //     _showPopup(context, 'No products available');
+  //     return;
+  //   }
+
+  //   var product = products[0]; // Just picking the first product for now.
+  // print('product before send : $product');
+
+  //   Navigator.pushReplacement(
+  //     context, // Use pushReplacement to remove QRScannerPage from the stack
+  //     MaterialPageRoute(
+  //       builder: (context) =>
+  //           PromotionSelectionPage(product: product, premium: premiumData),
+  //     ),
+  //   );
+  // }
 
   void _navigateToPromotionSelectionPage(
       List<dynamic>? products, List<dynamic>? premiumData) {
@@ -246,7 +280,7 @@ class PromotionSelectionPage extends StatelessWidget {
           branchDetails['promotions_flash_sale'].isNotEmpty) {
         availablePromotions.add({
           'type': 'flash_sale',
-          'text': 'Best Price',
+          'text': 'Flash Sale หลัก',
           'icon': Icons.flash_on,
           'color': Colors.red,
         });
@@ -256,7 +290,7 @@ class PromotionSelectionPage extends StatelessWidget {
           branchDetails['promotions_flash_sale_second'].isNotEmpty) {
         availablePromotions.add({
           'type': 'flash_sale_secondary',
-          'text': 'Best Price รอง',
+          'text': 'Flash Sale รอง',
           'icon': Icons.flash_auto,
           'color': Colors.orange,
         });

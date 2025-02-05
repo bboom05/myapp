@@ -58,10 +58,6 @@ class _ShowProductDetailState extends State<ShowProductDetail>
       select_branch_code = user.select_branch_code;
       select_branch_name = user.select_branch_name;
       selectedType = widget.selectedType;
-      print('selectedType: $selectedType');
-      print('branch_code: $branch_code');
-      print('select_branch_code: $select_branch_code');
-      print('select_branch_name: $select_branch_name');
     });
   }
 
@@ -1129,8 +1125,8 @@ class _ShowProductDetailState extends State<ShowProductDetail>
     print('promotion: $promotion');
 
     if (promotion == null ||
-        promotion['note_pm'] == null ||
-        promotion['note_pm'].toString().isEmpty) {
+        promotion['note'] == null ||
+        promotion['note'].toString().isEmpty) {
       return Container(
         width: MediaQuery.of(context).size.width,
         margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -1187,9 +1183,9 @@ class _ShowProductDetailState extends State<ShowProductDetail>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              promotion['note_pm'] != null &&
-                      promotion['note_pm'].toString().isNotEmpty
-                  ? promotion['note_pm'].toString()
+              promotion['note'] != null &&
+                      promotion['note'].toString().isNotEmpty
+                  ? promotion['note'].toString()
                   : '-',
               style: TextStyle(fontFamily: 'Kanit'),
             )

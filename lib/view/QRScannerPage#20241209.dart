@@ -29,8 +29,6 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
   var fullname = "";
   var branch_code = "";
   var branch_name = "";
-  var select_branch_code = "";
-  var select_branch_name = "";
 
   @override
   void initState() {
@@ -80,8 +78,6 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
       fullname = user.fullname;
       branch_code = user.brance_code;
       branch_name = user.brance_name;
-      select_branch_code = user.select_branch_code;
-      select_branch_name = user.select_branch_name;
     });
   }
 
@@ -98,17 +94,8 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
         },
         body: jsonMap);
     var rs = json.decode(response.body);
-    print('rs: $rs');
-    // if (rs['status'] == 200 && rs['data'].isNotEmpty) {
-    //   return rs['data'];
-    // }
-    // return null;
-
-    if (rs['status'] == 200 && rs['data'] != null) {
-      final data = rs['data'];
-      if (data['products'] != null && data['products'].isNotEmpty) {
-        return data;
-      }
+    if (rs['status'] == 200 && rs['data'].isNotEmpty) {
+      return rs['data'];
     }
     return null;
   }
@@ -116,34 +103,31 @@ class _QRViewCreatedPageState extends State<QRScannerPage> {
   Future<Map<String, dynamic>?> getQr(String strQr) async {
     Uri uri = Uri.parse(strQr);
     String qrId = uri.queryParameters['qr_id'] ?? '';
-    print('qrId: $qrId');
-    print('select_branch_code: $select_branch_code');
-
     Map<String, String> map = {
       "qr_id": qrId,
-      "branch_code": select_branch_code,
+      "branch_code": branch_code,
       "type": "app"
     };
     var body = json.encode(map);
-
-    final response = await fetchProductDetail(http.Client(), body);
-    return response ?? {}; // คืนค่าว่างถ้า response เป็น null
+    return await fetchProductDetail(http.Client(), body);
   }
 
-
+  // Navigate to Promotion Selection Page
   void _navigateToPromotionSelectionPage(
-      List<dynamic>? products, List<dynamic>? premiumData) {
-    if (products == null || products.isEmpty) {
-      _showPopup(context, 'ไม่มีสินค้าในระบบ');
+      List<dynamic> products, List<dynamic> premiumData) {
+    if (products.isEmpty) {
+      _showPopup(context, 'No products available');
       return;
     }
 
-    var product = products[0]; // ใช้สินค้าตัวแรก
+    var product = products[0]; // Just picking the first product for now.
+  print('product before send : $product');
+
     Navigator.pushReplacement(
-      context,
+      context, // Use pushReplacement to remove QRScannerPage from the stack
       MaterialPageRoute(
-        builder: (context) => PromotionSelectionPage(
-            product: product, premium: premiumData ?? []),
+        builder: (context) =>
+            PromotionSelectionPage(product: product, premium: premiumData),
       ),
     );
   }
@@ -241,46 +225,48 @@ class PromotionSelectionPage extends StatelessWidget {
     var branchDetails = product['branch_details'];
     List<Map<String, dynamic>> availablePromotions = [];
 
-    if (branchDetails != null) {
-      if (branchDetails['promotions_flash_sale'] != null &&
-          branchDetails['promotions_flash_sale'].isNotEmpty) {
-        availablePromotions.add({
-          'type': 'flash_sale',
-          'text': 'Best Price',
-          'icon': Icons.flash_on,
-          'color': Colors.red,
-        });
-      }
+    if (branchDetails != null &&
+        branchDetails['promotions_flash_sale'] != null &&
+        branchDetails['promotions_flash_sale'].isNotEmpty) {
+      availablePromotions.add({
+        'type': 'flash_sale',
+        'text': 'Flash Sale หลัก',
+        'icon': Icons.flash_on,
+        'color': Colors.red,
+      });
+    }
 
-      if (branchDetails['promotions_flash_sale_second'] != null &&
-          branchDetails['promotions_flash_sale_second'].isNotEmpty) {
-        availablePromotions.add({
-          'type': 'flash_sale_secondary',
-          'text': 'Best Price รอง',
-          'icon': Icons.flash_auto,
-          'color': Colors.orange,
-        });
-      }
+    if (branchDetails != null &&
+        branchDetails['promotions_flash_sale_second'] != null &&
+        branchDetails['promotions_flash_sale_second'].isNotEmpty) {
+      availablePromotions.add({
+        'type': 'flash_sale_secondary',
+        'text': 'Flash Sale รอง',
+        'icon': Icons.flash_auto,
+        'color': Colors.orange,
+      });
+    }
 
-      if (branchDetails['promotions_main'] != null &&
-          branchDetails['promotions_main'].isNotEmpty) {
-        availablePromotions.add({
-          'type': 'general',
-          'text': 'ทั่วไป หลัก',
-          'icon': Icons.store,
-          'color': Colors.green,
-        });
-      }
+    if (branchDetails != null &&
+        branchDetails['promotions_main'] != null &&
+        branchDetails['promotions_main'].isNotEmpty) {
+      availablePromotions.add({
+        'type': 'general',
+        'text': 'ทั่วไป หลัก',
+        'icon': Icons.store,
+        'color': Colors.green,
+      });
+    }
 
-      if (branchDetails['promotions_second'] != null &&
-          branchDetails['promotions_second'].isNotEmpty) {
-        availablePromotions.add({
-          'type': 'general_secondary',
-          'text': 'ทั่วไป รอง',
-          'icon': Icons.storefront,
-          'color': Colors.blue,
-        });
-      }
+    if (branchDetails != null &&
+        branchDetails['promotions_second'] != null &&
+        branchDetails['promotions_second'].isNotEmpty) {
+      availablePromotions.add({
+        'type': 'general_secondary',
+        'text': 'ทั่วไป รอง',
+        'icon': Icons.storefront,
+        'color': Colors.blue,
+      });
     }
 
     // ตรวจสอบถ้ามีโปรโมชั่นเดียว ให้นำทางไปยังหน้าถัดไปทันที
@@ -390,9 +376,8 @@ class PromotionSelectionPage extends StatelessWidget {
                           Text(
                             promotion['text'],
                             style: const TextStyle(
-                              fontFamily:'Kanit',
-                              fontSize: 16,
-                              // fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
                             textAlign: TextAlign.center,
                           ),

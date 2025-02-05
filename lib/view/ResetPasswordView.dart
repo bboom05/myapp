@@ -40,10 +40,19 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
   }
 
   Future<void> postResetPassword(http.Client client, String jsonMap) async {
+    var usernameKey = Info().userAPIProd;
+    var passwordKey = Info().passAPIProd;
+
+    final encodedCredentials =
+        base64Encode(utf8.encode('$usernameKey:$passwordKey'));
+
     try {
       final response = await client.post(
         Uri.parse(Info().userSignup),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Authorization': 'Basic $encodedCredentials',
+          'Content-Type': 'application/json'
+        },
         body: jsonMap,
       );
 
